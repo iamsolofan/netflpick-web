@@ -430,7 +430,6 @@ const MyRatingsSection = ({ myRatingsData, onMovieClick, onDeleteRating, onEditR
   );
 };
 
-
 const BoardListPage = ({ user, onLoginRequired }) => {
   const { type } = useParams();
   const [posts, setPosts] = useState([]);
@@ -655,12 +654,13 @@ const BoardWriteModal = ({ isOpen, onClose, user, type, onPostAdded }) => {
     }
   };
 
+  // 🚨 창 닫기 안전장치 적용
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-[80] p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl p-6 text-white shadow-2xl flex flex-col h-[85vh]">
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-[80] p-4" onClick={onClose}>
+      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl p-6 text-white shadow-2xl flex flex-col h-[85vh]" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-6 shrink-0">
           <h2 className="text-2xl font-bold">새 글 작성</h2>
-          <button onClick={onClose} className="text-gray-400 text-2xl font-bold hover:text-white">&times;</button>
+          <button onClick={onClose} className="text-gray-400 text-3xl font-bold hover:text-white">&times;</button>
         </div>
         
         {isAdmin && (
@@ -724,8 +724,8 @@ const LoginModal = ({ isOpen, onClose }) => {
     catch (error) { alert("로그인 중 오류가 발생했습니다."); }
   };
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-[80] p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-sm p-6 text-center">
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-[80] p-4" onClick={onClose}>
+      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-sm p-6 text-center" onClick={e => e.stopPropagation()}>
         <h2 className="text-xl font-bold text-white mb-2">NETFL<span className="text-red-600">PICK</span> 로그인</h2>
         <p className="text-gray-400 text-sm mb-6">기기를 변경해도 평점과 글이 영구 보관됩니다.</p>
         <button onClick={handleGoogleLogin} className="w-full bg-white text-gray-800 font-bold py-3 rounded-md shadow-lg">G Google로 시작하기</button>
@@ -818,12 +818,13 @@ const ReviewModal = ({ isOpen, onClose, onAddRating, onUpdateRating, user, initi
     }
   };
 
+  // 🚨 창 닫기 안전장치 적용
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-[80] p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-lg p-6 text-white shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-[80] p-4" onClick={onClose}>
+      <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-lg p-6 text-white shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">{editingReview ? '평점 수정하기' : '평점 남기기'}</h2>
-          <button onClick={onClose} className="text-gray-400 text-xl font-bold hover:text-white">&times;</button>
+          <button onClick={onClose} className="text-gray-400 text-3xl font-bold hover:text-white">&times;</button>
         </div>
         {!selectedMovie ? (
           <div>
@@ -842,6 +843,8 @@ const ReviewModal = ({ isOpen, onClose, onAddRating, onUpdateRating, user, initi
                 </div>
               )}
             </div>
+            {/* 🚨 취소 버튼 추가 */}
+            <button onClick={onClose} className="w-full mt-4 bg-gray-700 hover:bg-gray-600 py-3 font-bold text-white rounded transition-colors">닫기</button>
           </div>
         ) : (
           <div className="flex flex-col gap-5">
@@ -873,9 +876,14 @@ const ReviewModal = ({ isOpen, onClose, onAddRating, onUpdateRating, user, initi
               </div>
             </div>
             <textarea className="w-full p-4 bg-gray-800 rounded text-white resize-none h-24 border border-gray-700 focus:border-red-500 outline-none" placeholder="한줄평을 남겨주세요." value={reviewText} onChange={e => setReviewText(e.target.value)} />
-            <button onClick={handleSubmit} className="w-full bg-red-600 py-4 font-extrabold text-lg rounded shadow-lg hover:bg-red-700 transition-colors">
-              {editingReview ? '수정 완료' : 'DB에 등록하기'}
-            </button>
+            
+            <div className="flex gap-3">
+              {/* 🚨 취소 버튼 추가 */}
+              <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-4 font-bold rounded shadow-lg transition-colors">취소</button>
+              <button onClick={handleSubmit} className="flex-1 bg-red-600 hover:bg-red-700 py-4 font-extrabold text-lg rounded shadow-lg transition-colors">
+                {editingReview ? '수정 완료' : 'DB에 등록하기'}
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -964,7 +972,7 @@ const AdminCinemaInputRow = ({ label, value, onChange, isNewRelease, isOther }) 
   );
 };
 
-// 🚨 관리자 수정 모달 로직 적용
+// 🚨 창 닫기 안전장치 적용
 const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
   const [date, setDate] = useState(getRecentFridayKST());
   
@@ -1036,7 +1044,6 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
               await addDoc(collection(db, "cinema_reviews"), reviewObj);
             }
           } else if (entry.data.docId) {
-            // DB에는 있는데 입력칸이 비워졌다면 삭제 요청이므로 삭제 처리
             await deleteDoc(doc(db, "cinema_reviews", entry.data.docId));
           }
         }
@@ -1050,12 +1057,16 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-[80] p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-xl p-6 text-white max-h-[90vh] flex flex-col shadow-2xl">
+    // 🚨 배경을 클릭하면 onClose가 실행되어 모달이 닫히도록 수정
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-[80] p-4" onClick={onClose}>
+      {/* 🚨 안쪽 흰색/검은색 박스를 눌렀을 때는 안 닫히도록 이벤트 전파 방지(stopPropagation) */}
+      <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-xl p-6 text-white max-h-[90vh] flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4 shrink-0">
           <h2 className="text-xl font-bold text-red-500">{editData ? '🎬 시네마지옥 기록 수정' : '🎬 시네마지옥 일괄 등록'}</h2>
-          <button onClick={onClose} className="text-gray-400 text-2xl font-bold hover:text-white">&times;</button>
+          <button onClick={onClose} className="text-gray-400 text-3xl font-bold hover:text-white">&times;</button>
         </div>
         <div className="overflow-y-auto flex-1 pr-2 custom-scrollbar">
           <label className="block text-sm text-gray-400 mb-1">방송 날짜 (KST 기준 자동 세팅)</label>
@@ -1068,9 +1079,14 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
           <AdminCinemaInputRow label="[최욱]" value={choiW} onChange={setChoiW} />
           <AdminCinemaInputRow label="[기타 게스트]" value={other} onChange={setOther} isOther={true} />
         </div>
-        <button onClick={handleSubmit} className="w-full mt-6 bg-red-600 hover:bg-red-700 py-4 font-bold rounded-xl text-lg shadow-lg shrink-0 transition-colors">
-          {editData ? '수정 사항 저장하기' : '기록 일괄 등록하기'}
-        </button>
+        
+        {/* 🚨 하단에 큼직한 취소 버튼을 추가하여 언제든 빠져나갈 수 있게 보강 */}
+        <div className="mt-6 flex gap-3 shrink-0">
+          <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-4 font-bold rounded-xl text-lg transition-colors">취소</button>
+          <button onClick={handleSubmit} className="flex-1 bg-red-600 hover:bg-red-700 py-4 font-bold rounded-xl text-lg shadow-lg transition-colors">
+            {editData ? '저장하기' : '일괄 등록하기'}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1079,7 +1095,7 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
 const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
   const [activePanel, setActivePanel] = useState('전체');
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
-  const [editData, setEditData] = useState(null); // 수정할 데이터 보관
+  const [editData, setEditData] = useState(null); 
   const [cinemaReviews, setCinemaReviews] = useState([]);
 
   const fetchCinemaReviews = async () => {
@@ -1120,7 +1136,6 @@ const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
     }, {});
   }, [cinemaReviews, activePanel]);
 
-  // 🚨 최광희, 최욱 3개 이상일 때만 메뉴에 띄우기
   const panelCounts = useMemo(() => {
     const counts = {};
     cinemaReviews.forEach(r => { counts[r.panelName] = (counts[r.panelName] || 0) + 1; });
@@ -1159,13 +1174,11 @@ const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
                 
                 <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
                    <h3 className="text-xl font-bold text-white">{date} 방송</h3>
-                   {/* 🚨 날짜별 수정 버튼 */}
                    {isAdmin && (
                      <button onClick={() => openEditModal(groupedByDate[date])} className="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded font-bold transition-colors">기록 수정</button>
                    )}
                 </div>
 
-                {/* 🚨 가로 슬라이드(snap-x) 제거 및 그리드 3단(grid-cols-3) 적용 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {groupedByDate[date].map((review, index) => (
                     <div key={`${review.dbId}-${index}`} onClick={() => onMovieClick(review)} className="bg-gray-900 p-4 rounded-lg flex gap-4 border border-gray-700 hover:border-gray-500 cursor-pointer transition-colors group relative">
@@ -1449,7 +1462,6 @@ function MainApp() {
                   onEditRating={(item) => { setEditingReview(item); setIsReviewModalOpen(true); }} 
                 />
               ))}
-              {/* 🚨 시네마지옥 섹션에 onRefreshGlobal 전달 */}
               {currentMenu === 'cinema' && <CinemaHellSection isAdmin={isAdmin} onMovieClick={handleMovieClick} onRefreshGlobal={fetchAllMovieData} />}
             </>
           } />
