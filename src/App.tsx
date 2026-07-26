@@ -6,7 +6,8 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, usePa
 // ==========================================
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, getDoc, setDoc, updateDoc, where } from 'firebase/firestore';
+// 🚨 deleteDoc 추가됨
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, getDoc, setDoc, updateDoc, where, deleteDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -106,7 +107,6 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
     if (!movie) { navigate('/'); return; }
     document.title = `${movie.title} 평점 및 한줄평 모음 - 넷플픽`;
     
-    // TMDB에서 개봉일, 장르, 줄거리 + 감독/출연진 정보 가져오기
     if (movie.id) {
       fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=ko-KR&append_to_response=credits`)
         .then(res => res.json())
@@ -118,7 +118,6 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
         .catch(err => console.error(err));
     }
 
-    // DB에서 실제 리뷰(유저 평가 + 시네마지옥 기록) 가져오기
     const fetchReviews = async () => {
       if (!db) return;
       try {
@@ -130,16 +129,10 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
         cSnap.forEach(doc => {
           const data = doc.data();
           reviews.push({
-            id: doc.id,
-            nickname: data.reviewerName,
-            rating: data.rating,
-            isRecommend: data.isRecommend,
-            comment: data.comment,
-            date: data.broadcastDate,
-            isCinema: true
+            id: doc.id, nickname: data.reviewerName, rating: data.rating, isRecommend: data.isRecommend,
+            comment: data.comment, date: data.broadcastDate, isCinema: true
           });
         });
-        // 최신순 정렬
         reviews.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
         setActualReviews(reviews);
       } catch(e) { console.error(e); }
@@ -220,8 +213,224 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
   );
 };
 
-// ... 이하 컴포넌트(게시판, 모달 등)는 그대로 유지
-// (BoardListPage, BoardDetailPage, BoardWriteModal, LoginRequiredMessage, NicknameModal, LoginModal, ReviewModal, LatestReviewsSection, MyTasteSection, MyRatingsSection, AdminCinemaInputRow, AdminCinemaModal, CinemaHellSection)
+// 🚨 최신 리뷰가 1개가 아닌 목록으로 나오게 수정됨
+const LatestReviewsSection = ({ latestReviews, onMovieClick }) => (
+  <section className="animate-fadeIn">
+    <div className="mb-12 bg-gray-800 border border-gray-700 rounded-xl p-6 shadow-2xl">
+      <h2 className="text-xl font-bold text-white mb-6 border-l-4 border-red-600 pl-3">🔥 실시간 최신 평가</h2>
+      {latestReviews && latestReviews.length > 0 ? (
+        <div className="flex flex-col gap-6">
+          {latestReviews.map((review, idx) => (
+            <div key={idx} className="flex gap-6 items-center border-b border-gray-700 pb-6 last:border-0 last:pb-0">
+              <img src={review.poster} onClick={() => onMovieClick(review)} alt="" className="w-20 h-28 object-cover rounded shadow-md bg-gray-700 cursor-pointer hover:opacity-80 transition-opacity shrink-0" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(review.title)}`; }} />
+              <div className="flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                  <h3 className="text-lg font-bold text-white cursor-pointer hover:text-red-400 transition-colors" onClick={() => onMovieClick(review)}>{review.title}</h3>
+                  <div className="flex items-center gap-2">
+                    {review.isRecommend ? <span className="px-2 py-0.5 bg-green-600/30 border border-green-500 text-green-400 text-[10px] font-bold rounded-full">👍 추천</span> : <span className="px-2 py-0.5 bg-red-600/30 border border-red-500 text-red-400 text-[10px] font-bold rounded-full">👎 비추천</span>}
+                    <span className="text-yellow-400 text-sm font-bold">★ {Number(review.rating).toFixed(1)}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 mb-2">
+                  작성자: <span className="text-gray-200 font-bold">{review.reviewerName || review.nickname || '익명'}</span> 
+                  {review.isCinema && <span className="text-red-500 font-bold ml-1">(매불쇼)</span>}
+                  <span className="ml-2 text-gray-500">{review.date ? new Date(review.date).toLocaleDateString('ko-KR') : ''}</span>
+                </p>
+                <p className="text-gray-300 text-sm bg-gray-900 p-3 rounded border border-gray-700">"{review.comment}"</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : <p className="text-gray-500 text-center py-10">등록된 리뷰가 없습니다.</p>}
+    </div>
+  </section>
+);
+
+// 🚨 진짜 데이터로 매칭하는 알고리즘 적용
+const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick }) => {
+  const [expandedUserId, setExpandedUserId] = useState(null);
+
+  const matchingUsers = useMemo(() => {
+    if (!myRatings || myRatings.length === 0) return [];
+
+    const profiles = {}; 
+    
+    allRatings.forEach(r => {
+      if (r.uid === myRatings[0].uid) return; 
+      if (!profiles[r.uid]) profiles[r.uid] = { id: r.uid, name: r.nickname, avatar: '👤', likes: [], dislikes: [], ratedIds: new Set() };
+      profiles[r.uid].ratedIds.add(r.id);
+      if (r.isRecommend) profiles[r.uid].likes.push(r);
+      else profiles[r.uid].dislikes.push(r);
+    });
+
+    allCinemaReviews.forEach(r => {
+      const criticId = `critic_${r.reviewerName}`;
+      if (!profiles[criticId]) profiles[criticId] = { id: criticId, name: `${r.reviewerName} (평론가)`, avatar: '🎬', likes: [], dislikes: [], ratedIds: new Set() };
+      profiles[criticId].ratedIds.add(r.id);
+      if (r.isRecommend) profiles[criticId].likes.push(r);
+      else profiles[criticId].dislikes.push(r);
+    });
+
+    const myLikes = new Set(myRatings.filter(r => r.isRecommend).map(r => r.id));
+    const myDislikes = new Set(myRatings.filter(r => !r.isRecommend).map(r => r.id));
+    const myRatedIds = new Set(myRatings.map(r => r.id));
+
+    const results = [];
+
+    Object.values(profiles).forEach(profile => {
+       const commonIds = [...profile.ratedIds].filter(id => myRatedIds.has(id));
+       if (commonIds.length === 0) return; 
+
+       let agreements = 0;
+       const commonLikedMovies = [];
+       const commonDislikedMovies = [];
+
+       commonIds.forEach(id => {
+          const iLiked = myLikes.has(id);
+          const iDisliked = myDislikes.has(id);
+          const theyLiked = profile.likes.some(m => m.id === id);
+          const theyDisliked = profile.dislikes.some(m => m.id === id);
+
+          if (iLiked && theyLiked) {
+             agreements++;
+             commonLikedMovies.push(profile.likes.find(m => m.id === id));
+          } else if (iDisliked && theyDisliked) {
+             agreements++;
+             commonDislikedMovies.push(profile.dislikes.find(m => m.id === id));
+          }
+       });
+
+       const matchRate = Math.round((agreements / commonIds.length) * 100);
+       
+       if (agreements > 0) {
+         results.push({
+           ...profile,
+           matchRate,
+           commonCount: commonIds.length,
+           commonLikes: commonLikedMovies,
+           commonDislikes: commonDislikedMovies
+         });
+       }
+    });
+
+    return results.sort((a, b) => {
+       if (b.matchRate !== a.matchRate) return b.matchRate - a.matchRate;
+       return b.commonCount - a.commonCount;
+    }).slice(0, 5);
+
+  }, [myRatings, allRatings, allCinemaReviews]);
+
+  return (
+    <section className="animate-fadeIn">
+      <div className="text-center mb-10"><h2 className="text-3xl font-extrabold text-white mb-2">🤝 나와 <span className="text-red-500">취향이 맞는</span> 유저 Top 5</h2></div>
+      
+      {matchingUsers.length === 0 ? (
+        <div className="bg-gray-800 p-10 rounded-xl text-center border border-gray-700">
+          <p className="text-gray-400 mb-2">아직 겹치는 평가를 남긴 유저나 평론가가 없습니다.</p>
+          <p className="text-gray-500 text-sm">더 많은 영화에 평점을 남겨 취향이 맞는 사람을 찾아보세요!</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {matchingUsers.map((user, idx) => {
+            const isExpanded = expandedUserId === user.id;
+            return (
+              <div key={user.id} className={`bg-gray-800 border transition-all rounded-xl p-6 relative shadow-lg ${isExpanded ? 'border-red-500' : 'border-gray-700'}`}>
+                <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpandedUserId(isExpanded ? null : user.id)}>
+                  <div className="flex items-center gap-4">
+                    <span className="bg-red-600 text-white font-bold px-3 py-1 rounded-lg text-sm">{idx + 1}위</span>
+                    <span className="text-3xl">{user.avatar}</span>
+                    <div>
+                       <h3 className="text-lg font-bold text-white">{user.name}</h3>
+                       <p className="text-xs text-gray-500">함께 평가한 영화 {user.commonCount}편 중 {user.commonLikes.length + user.commonDislikes.length}편 일치</p>
+                    </div>
+                  </div>
+                  <div className="text-red-400 font-extrabold text-xl">일치율 {user.matchRate}%</div>
+                </div>
+                {isExpanded && (
+                  <div className="mt-6 pt-6 border-t border-gray-700">
+                    {user.commonLikes.length > 0 && (
+                      <div className="mb-4">
+                        <h4 className="text-sm font-semibold text-gray-300 mb-3"><span className="text-green-400">👍</span> 통했네 통했어! 같이 추천한 영화</h4>
+                        <div className="flex flex-wrap gap-4">
+                          {user.commonLikes.map((m, i) => (
+                            <div key={i} className="flex flex-col items-center w-20">
+                              <img src={m.poster} onClick={(e) => { e.stopPropagation(); onMovieClick(m); }} alt="" className="w-20 h-28 object-cover rounded shadow-md mb-1 bg-gray-700 cursor-pointer hover:opacity-80 transition-opacity" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(m.title)}`; }} />
+                              <span className="text-[10px] text-gray-200 truncate w-full text-center">{m.title}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {user.commonDislikes.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-300 mb-3"><span className="text-red-400">👎</span> 같이 비추천한 영화</h4>
+                        <div className="flex flex-wrap gap-4">
+                          {user.commonDislikes.map((m, i) => (
+                            <div key={i} className="flex flex-col items-center w-20">
+                              <img src={m.poster} onClick={(e) => { e.stopPropagation(); onMovieClick(m); }} alt="" className="w-20 h-28 object-cover rounded shadow-md mb-1 bg-gray-700 cursor-pointer hover:opacity-80 transition-opacity" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(m.title)}`; }} />
+                              <span className="text-[10px] text-gray-200 truncate w-full text-center">{m.title}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+};
+
+const MyRatingsSection = ({ myRatingsData, onMovieClick, onDeleteRating }) => {
+  const [sortType, setSortType] = useState('date');
+  const sortedRatings = [...myRatingsData].sort((a, b) => {
+    if (sortType === 'date') {
+      const dateA = new Date(a.date || 0).getTime();
+      const dateB = new Date(b.date || 0).getTime();
+      return (isNaN(dateB) ? 0 : dateB) - (isNaN(dateA) ? 0 : dateA);
+    }
+    return b.rating - a.rating;
+  });
+
+  return (
+    <section className="animate-fadeIn">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-3xl font-extrabold text-white">⭐ 나의 <span className="text-red-500">평점</span> 기록</h2>
+        <div className="flex bg-gray-800 rounded-md p-1 border border-gray-700">
+          <button onClick={() => setSortType('date')} className={`px-4 py-2 text-sm rounded-md ${sortType === 'date' ? 'bg-red-600 text-white' : 'text-gray-400'}`}>최신순</button>
+          <button onClick={() => setSortType('rating')} className={`px-4 py-2 text-sm rounded-md ${sortType === 'rating' ? 'bg-red-600 text-white' : 'text-gray-400'}`}>평점순</button>
+        </div>
+      </div>
+      <div className="flex flex-col gap-4">
+        {sortedRatings.map((item, idx) => (
+          <div key={idx} className="bg-gray-800 p-4 rounded-xl border border-gray-700 flex gap-6 items-center relative pr-20">
+            {/* 🚨 삭제 버튼 추가 */}
+            <button onClick={(e) => { e.stopPropagation(); onDeleteRating(item.docId); }} className="absolute top-4 right-4 bg-red-900/60 hover:bg-red-600 text-red-100 hover:text-white border border-red-800 text-xs px-3 py-1.5 rounded transition-colors font-bold z-10">
+              삭제
+            </button>
+            <img src={item.poster} onClick={() => onMovieClick(item)} alt={item.title} className="w-20 h-28 object-cover rounded shadow-md bg-gray-700 cursor-pointer hover:opacity-80 transition-opacity" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(item.title)}`; }} />
+            <div className="flex-1">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                <h3 className="text-xl font-bold text-white cursor-pointer hover:text-red-400 transition-colors" onClick={() => onMovieClick(item)}>{item.title}</h3>
+                {item.isRecommend ? <span className="text-green-400 text-[10px] border border-green-400 px-2 py-0.5 rounded w-max">👍 추천</span> : <span className="text-red-400 text-[10px] border border-red-400 px-2 py-0.5 rounded w-max">👎 비추천</span>}
+              </div>
+              <div className="text-yellow-400 font-bold mb-1">★ {Number(item.rating).toFixed(1)}</div>
+              <div className="text-gray-500 text-xs mb-2">등록일: {item.date ? new Date(item.date).toLocaleDateString('ko-KR') : '날짜 없음'}</div>
+              <p className="text-gray-300 text-sm">"{item.comment}"</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+};
+
+
+// ... 이하 게시판 및 모달 컴포넌트는 기존과 동일
 const BoardListPage = ({ user, onLoginRequired }) => {
   const { type } = useParams();
   const [posts, setPosts] = useState([]);
@@ -426,17 +635,9 @@ const BoardWriteModal = ({ isOpen, onClose, user, type, onPostAdded }) => {
       }
 
       const newPost = {
-        uid: user.uid,
-        nickname: user.nickname,
-        type: type,
-        title: title,
-        content: content,
-        date: new Date().toISOString(),
-        isNotice: isAdmin && isNotice,
-        imageUrl: imageUrl,
-        likes: 0,
-        dislikes: 0,
-        votedUsers: []
+        uid: user.uid, nickname: user.nickname, type: type, title: title, content: content,
+        date: new Date().toISOString(), isNotice: isAdmin && isNotice, imageUrl: imageUrl,
+        likes: 0, dislikes: 0, votedUsers: []
       };
 
       if (db) {
@@ -580,9 +781,13 @@ const ReviewModal = ({ isOpen, onClose, onAddRating, user, initialMovie, myRatin
 
   const handleSubmit = async () => {
     if (isRecommend === null || rating === 0) return alert("추천 여부와 평점을 선택해주세요!");
-    if (myRatings.some(r => r.id === selectedMovie.id)) {
+    
+    // id 비교를 안전하게 처리
+    const hasAlreadyRated = myRatings.some(r => String(r.id) === String(selectedMovie.id));
+    if (hasAlreadyRated) {
       return alert("이미 평점을 남기신 영화입니다.");
     }
+    
     const newRatingObj = {
       uid: user.uid, nickname: user.nickname, id: selectedMovie.id, title: selectedMovie.title, poster: selectedMovie.poster,
       rating: Number(rating), isRecommend, comment: reviewText || '평가 완료', date: new Date().toISOString() 
@@ -653,115 +858,6 @@ const ReviewModal = ({ isOpen, onClose, onAddRating, user, initialMovie, myRatin
         )}
       </div>
     </div>
-  );
-};
-
-const LatestReviewsSection = ({ latestReview, onMovieClick }) => (
-  <section className="animate-fadeIn">
-    <div className="mb-12 bg-gray-800 border border-gray-700 rounded-xl p-6 shadow-2xl">
-      <h2 className="text-xl font-bold text-white mb-4">🔥 가장 최근 등록된 평가</h2>
-      {latestReview ? (
-        <div className="flex gap-6 items-center">
-          <img src={latestReview.poster} onClick={() => onMovieClick(latestReview)} alt="" className="w-24 h-36 object-cover rounded bg-gray-700 cursor-pointer hover:opacity-80 transition-opacity" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(latestReview.title)}`; }} />
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-1">
-              <h3 className="text-2xl font-bold text-white cursor-pointer hover:text-red-400 transition-colors" onClick={() => onMovieClick(latestReview)}>{latestReview.title}</h3>
-              {latestReview.isRecommend ? <span className="px-3 py-1 bg-green-600 text-white text-xs font-bold rounded-full">👍 추천</span> : <span className="px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-full">👎 비추천</span>}
-            </div>
-            <p className="text-sm text-gray-400 mb-2">작성자: <span className="text-gray-200 font-bold">{latestReview.reviewerName || latestReview.nickname || '익명'}</span> {latestReview.isCinema && <span className="text-red-500 text-xs">(매불쇼)</span>}</p>
-            <p className="text-yellow-400 font-bold mb-2">★ {Number(latestReview.rating).toFixed(1)} / 10</p>
-            <p className="text-gray-300 italic bg-gray-900 p-3 rounded border border-gray-700">"{latestReview.comment}"</p>
-          </div>
-        </div>
-      ) : <p className="text-gray-500 text-center py-10">등록된 리뷰가 없습니다.</p>}
-    </div>
-  </section>
-);
-
-const MyTasteSection = ({ myRatings, onMovieClick }) => {
-  const [expandedUserId, setExpandedUserId] = useState(null);
-  const myLikes = myRatings.filter(r => r.isRecommend);
-  const myDislikes = myRatings.filter(r => !r.isRecommend);
-  const matchingUsers = [
-    { id: 1, name: '시네마천국', avatar: '😎', matchRate: 94, tags: ['#스릴러매니아'], commonLikes: myLikes.slice(0, 3), commonDislikes: myDislikes.slice(0, 1) },
-    { id: 2, name: '방구석크리틱', avatar: '🤓', matchRate: 88, tags: ['#드라마'], commonLikes: myLikes.slice(0, 1), commonDislikes: [] },
-  ];
-
-  return (
-    <section className="animate-fadeIn">
-      <div className="text-center mb-10"><h2 className="text-3xl font-extrabold text-white mb-2">🤝 나와 <span className="text-red-500">취향이 맞는</span> 유저 Top 5</h2></div>
-      <div className="flex flex-col gap-4">
-        {matchingUsers.map((user, idx) => {
-          const isExpanded = expandedUserId === user.id;
-          return (
-            <div key={user.id} className={`bg-gray-800 border transition-all rounded-xl p-6 relative shadow-lg ${isExpanded ? 'border-red-500' : 'border-gray-700'}`}>
-              <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpandedUserId(isExpanded ? null : user.id)}>
-                <div className="flex items-center gap-4">
-                  <span className="bg-red-600 text-white font-bold px-3 py-1 rounded-lg text-sm">{idx + 1}위</span>
-                  <span className="text-3xl">{user.avatar}</span>
-                  <h3 className="text-lg font-bold text-white">{user.name}</h3>
-                </div>
-                <div className="text-red-400 font-extrabold text-xl">일치율 {user.matchRate}%</div>
-              </div>
-              {isExpanded && (
-                <div className="mt-6 pt-6 border-t border-gray-700">
-                  <h4 className="text-sm font-semibold text-gray-300 mb-3"><span className="text-green-400">👍</span> 같이 추천한 영화</h4>
-                  <div className="flex flex-wrap gap-4">
-                    {user.commonLikes.length === 0 && <span className="text-gray-500 text-sm">없음</span>}
-                    {user.commonLikes.map((m, i) => (
-                      <div key={i} className="flex flex-col items-center w-20">
-                        <img src={m.poster} onClick={(e) => { e.stopPropagation(); onMovieClick(m); }} alt="" className="w-20 h-28 object-cover rounded shadow-md mb-1 bg-gray-700 cursor-pointer hover:opacity-80 transition-opacity" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(m.title)}`; }} />
-                        <span className="text-xs text-gray-200 truncate w-full text-center">{m.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-};
-
-const MyRatingsSection = ({ myRatingsData, onMovieClick }) => {
-  const [sortType, setSortType] = useState('date');
-  const sortedRatings = [...myRatingsData].sort((a, b) => {
-    if (sortType === 'date') {
-      const dateA = new Date(a.date || 0).getTime();
-      const dateB = new Date(b.date || 0).getTime();
-      return (isNaN(dateB) ? 0 : dateB) - (isNaN(dateA) ? 0 : dateA);
-    }
-    return b.rating - a.rating;
-  });
-
-  return (
-    <section className="animate-fadeIn">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-extrabold text-white">⭐ 나의 <span className="text-red-500">평점</span> 기록</h2>
-        <div className="flex bg-gray-800 rounded-md p-1 border border-gray-700">
-          <button onClick={() => setSortType('date')} className={`px-4 py-2 text-sm rounded-md ${sortType === 'date' ? 'bg-red-600 text-white' : 'text-gray-400'}`}>최신순</button>
-          <button onClick={() => setSortType('rating')} className={`px-4 py-2 text-sm rounded-md ${sortType === 'rating' ? 'bg-red-600 text-white' : 'text-gray-400'}`}>평점순</button>
-        </div>
-      </div>
-      <div className="flex flex-col gap-4">
-        {sortedRatings.map((item, idx) => (
-          <div key={idx} className="bg-gray-800 p-4 rounded-xl border border-gray-700 flex gap-6 items-center relative">
-            <img src={item.poster} onClick={() => onMovieClick(item)} alt={item.title} className="w-20 h-28 object-cover rounded shadow-md bg-gray-700 cursor-pointer hover:opacity-80 transition-opacity" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(item.title)}`; }} />
-            <div className="flex-1 pr-10">
-              <div className="flex items-center gap-3">
-                <h3 className="text-xl font-bold text-white mb-1 cursor-pointer hover:text-red-400 transition-colors" onClick={() => onMovieClick(item)}>{item.title}</h3>
-                {item.isRecommend ? <span className="text-green-400 text-xs border border-green-400 px-2 rounded">👍 추천</span> : <span className="text-red-400 text-xs border border-red-400 px-2 rounded">👎 비추천</span>}
-              </div>
-              <div className="text-yellow-400 font-bold mb-1">★ {Number(item.rating).toFixed(1)}</div>
-              <div className="text-gray-500 text-xs mb-2">등록일: {item.date ? new Date(item.date).toLocaleDateString('ko-KR') : '날짜 없음'}</div>
-              <p className="text-gray-300 text-sm">"{item.comment}"</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
   );
 };
 
@@ -1048,10 +1144,13 @@ function MainApp() {
   const [dbUser, setDbUser] = useState(null); 
   const [myRatings, setMyRatings] = useState([]); 
   
+  const [allRatings, setAllRatings] = useState([]);
+  const [allCinemaReviews, setAllCinemaReviews] = useState([]);
+
   const [latestMovies, setLatestMovies] = useState([]);
   const [bestMovies, setBestMovies] = useState([]);
   const [worstMovies, setWorstMovies] = useState([]);
-  const [globalLatestReview, setGlobalLatestReview] = useState(null);
+  const [globalLatestReviews, setGlobalLatestReviews] = useState([]);
 
   const isAdmin = dbUser?.nickname === '넷플픽';
 
@@ -1075,18 +1174,23 @@ function MainApp() {
     return () => unsubscribe();
   }, []);
 
-  // DB에 저장된 모든 평점과 시네마지옥 기록을 불러와서 Top10 랭킹을 만드는 함수
   const fetchAllMovieData = async () => {
     if (!db) return;
     try {
       const ratingsSnap = await getDocs(query(collection(db, "ratings"), orderBy("date", "desc")));
       const cinemaSnap = await getDocs(query(collection(db, "cinema_reviews"), orderBy("broadcastDate", "desc")));
 
-      const movieMap = new Map();
-      let latestGlobal = null;
+      const tempAllRatings = [];
+      ratingsSnap.forEach(doc => tempAllRatings.push({ docId: doc.id, ...doc.data(), isCinema: false }));
+      setAllRatings(tempAllRatings);
 
-      ratingsSnap.forEach(doc => {
-        const data = doc.data();
+      const tempCinema = [];
+      cinemaSnap.forEach(doc => tempCinema.push({ docId: doc.id, ...doc.data(), date: doc.data().broadcastDate, isCinema: true }));
+      setAllCinemaReviews(tempCinema);
+
+      const movieMap = new Map();
+
+      tempAllRatings.forEach(data => {
         if (!movieMap.has(data.id)) {
           movieMap.set(data.id, { id: data.id, title: data.title, poster: data.poster, totalRating: 0, count: 0, recommends: 0, notRecommends: 0, latestDate: data.date });
         }
@@ -1096,27 +1200,18 @@ function MainApp() {
         if (data.isRecommend) m.recommends += 1;
         else m.notRecommends += 1;
         if (new Date(data.date) > new Date(m.latestDate)) m.latestDate = data.date;
-
-        if (!latestGlobal || new Date(data.date) > new Date(latestGlobal.date)) {
-          latestGlobal = { ...data, isCinema: false };
-        }
       });
 
-      cinemaSnap.forEach(doc => {
-        const data = doc.data();
+      tempCinema.forEach(data => {
         if (!movieMap.has(data.id)) {
-          movieMap.set(data.id, { id: data.id, title: data.title, poster: data.poster, totalRating: 0, count: 0, recommends: 0, notRecommends: 0, latestDate: data.broadcastDate });
+          movieMap.set(data.id, { id: data.id, title: data.title, poster: data.poster, totalRating: 0, count: 0, recommends: 0, notRecommends: 0, latestDate: data.date });
         }
         const m = movieMap.get(data.id);
         m.totalRating += data.rating;
         m.count += 1;
         if (data.isRecommend) m.recommends += 1;
         else m.notRecommends += 1;
-        if (new Date(data.broadcastDate) > new Date(m.latestDate)) m.latestDate = data.broadcastDate;
-
-        if (!latestGlobal || new Date(data.broadcastDate) > new Date(latestGlobal.date || latestGlobal.broadcastDate)) {
-          latestGlobal = { ...data, date: data.broadcastDate, isCinema: true };
-        }
+        if (new Date(data.date) > new Date(m.latestDate)) m.latestDate = data.date;
       });
 
       const allMovies = Array.from(movieMap.values()).map(m => ({
@@ -1127,7 +1222,13 @@ function MainApp() {
       setLatestMovies([...allMovies].sort((a,b) => new Date(b.latestDate) - new Date(a.latestDate)));
       setBestMovies([...allMovies].filter(m => m.recommends > 0).sort((a,b) => b.rating - a.rating));
       setWorstMovies([...allMovies].filter(m => m.notRecommends > 0).sort((a,b) => a.rating - b.rating));
-      setGlobalLatestReview(latestGlobal);
+      
+      const allCombinedReviews = [...tempAllRatings, ...tempCinema].sort((a, b) => {
+         const dateA = new Date(a.date || 0);
+         const dateB = new Date(b.date || 0);
+         return dateB - dateA;
+      });
+      setGlobalLatestReviews(allCombinedReviews.slice(0, 10)); 
 
     } catch(e) { console.error("전체 영화 로딩 실패:", e); }
   };
@@ -1135,7 +1236,6 @@ function MainApp() {
   useEffect(() => {
     fetchAllMovieData();
   }, [db]);
-
 
   const handleNicknameSubmit = async (nicknameInput) => {
     const trimmed = nicknameInput.trim();
@@ -1162,7 +1262,7 @@ function MainApp() {
       const querySnapshot = await getDocs(q);
       const fetchedRatings = [];
       querySnapshot.forEach((doc) => {
-        if(doc.data().uid === uid) fetchedRatings.push(doc.data());
+        if(doc.data().uid === uid) fetchedRatings.push({ docId: doc.id, ...doc.data() });
       });
       setMyRatings(fetchedRatings);
     } catch (error) { console.error("DB 에러:", error); }
@@ -1171,6 +1271,18 @@ function MainApp() {
   const handleAddRating = (newRating) => {
     setMyRatings(prev => [newRating, ...prev]);
     fetchAllMovieData(); 
+  };
+
+  // 🚨 평점 삭제 함수 (직접 삭제 가능)
+  const handleDeleteRating = async (docId) => {
+    if (!window.confirm("정말 이 평점을 삭제하시겠습니까?")) return;
+    try {
+      await deleteDoc(doc(db, "ratings", docId));
+      fetchMyRatingsFromDB(auth.currentUser.uid);
+      fetchAllMovieData();
+    } catch(e) {
+      alert("삭제 중 오류가 발생했습니다.");
+    }
   };
 
   const handleMovieClick = (movie) => {
@@ -1235,9 +1347,9 @@ function MainApp() {
                   <Top10Section title="☠️ 넷플픽 최악 워스트" movies={worstMovies} isWorst={true} onMovieClick={handleMovieClick} />
                 </>
               )}
-              {currentMenu === 'latest' && <LatestReviewsSection latestReview={globalLatestReview} onMovieClick={handleMovieClick} />}
-              {currentMenu === 'taste' && (!dbUser ? <LoginRequiredMessage onLoginClick={() => setIsLoginModalOpen(true)} /> : <MyTasteSection myRatings={myRatings} onMovieClick={handleMovieClick} />)}
-              {currentMenu === 'myRatings' && (!dbUser ? <LoginRequiredMessage onLoginClick={() => setIsLoginModalOpen(true)} /> : <MyRatingsSection myRatingsData={myRatings} onMovieClick={handleMovieClick} />)}
+              {currentMenu === 'latest' && <LatestReviewsSection latestReviews={globalLatestReviews} onMovieClick={handleMovieClick} />}
+              {currentMenu === 'taste' && (!dbUser ? <LoginRequiredMessage onLoginClick={() => setIsLoginModalOpen(true)} /> : <MyTasteSection myRatings={myRatings} allRatings={allRatings} allCinemaReviews={allCinemaReviews} onMovieClick={handleMovieClick} />)}
+              {currentMenu === 'myRatings' && (!dbUser ? <LoginRequiredMessage onLoginClick={() => setIsLoginModalOpen(true)} /> : <MyRatingsSection myRatingsData={myRatings} onMovieClick={handleMovieClick} onDeleteRating={handleDeleteRating} />)}
               {currentMenu === 'cinema' && <CinemaHellSection isAdmin={isAdmin} onMovieClick={handleMovieClick} />}
             </>
           } />
