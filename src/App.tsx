@@ -184,7 +184,18 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
                    <div className="flex items-center gap-2">
                      {review.isCinema && <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">매불쇼</span>}
                      <span className="text-white font-bold text-xs">{review.nickname}</span>
-                     {review.isRecommend ? <span className="text-green-400 text-[10px] border border-green-500 px-1.5 py-0.5 rounded bg-green-900/20">추천</span> : <span className="text-red-400 text-[10px] border border-red-500 px-1.5 py-0.5 rounded bg-red-900/20">비추천</span>}
+                     
+                     {/* 🚨 양방향 추천 표시 로직 */}
+                     {review.isRecommend === 'both' ? (
+                       <div className="flex gap-1">
+                         <span className="text-green-400 text-[10px] border border-green-500 px-1.5 py-0.5 rounded bg-green-900/20">추천</span>
+                         <span className="text-red-400 text-[10px] border border-red-500 px-1.5 py-0.5 rounded bg-red-900/20">비추천</span>
+                       </div>
+                     ) : review.isRecommend ? (
+                       <span className="text-green-400 text-[10px] border border-green-500 px-1.5 py-0.5 rounded bg-green-900/20">추천</span>
+                     ) : (
+                       <span className="text-red-400 text-[10px] border border-red-500 px-1.5 py-0.5 rounded bg-red-900/20">비추천</span>
+                     )}
                    </div>
                    <span className="text-yellow-400 font-bold text-sm">★ {Number(review.rating).toFixed(1)}</span>
                  </div>
@@ -225,7 +236,19 @@ const LatestReviewsSection = ({ latestReviews, onMovieClick }) => (
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
                   <h3 className="text-lg font-bold text-white cursor-pointer hover:text-red-400 transition-colors" onClick={() => onMovieClick(review)}>{review.title}</h3>
                   <div className="flex items-center gap-2">
-                    {review.isRecommend ? <span className="px-2 py-0.5 bg-green-600/30 border border-green-500 text-green-400 text-[10px] font-bold rounded-full">👍 추천</span> : <span className="px-2 py-0.5 bg-red-600/30 border border-red-500 text-red-400 text-[10px] font-bold rounded-full">👎 비추천</span>}
+                    
+                    {/* 🚨 양방향 추천 표시 로직 */}
+                    {review.isRecommend === 'both' ? (
+                      <div className="flex items-center gap-1">
+                        <span className="px-2 py-0.5 bg-green-600/30 border border-green-500 text-green-400 text-[10px] font-bold rounded-full">👍 추천</span>
+                        <span className="px-2 py-0.5 bg-red-600/30 border border-red-500 text-red-400 text-[10px] font-bold rounded-full">👎 비추천</span>
+                      </div>
+                    ) : review.isRecommend ? (
+                      <span className="px-2 py-0.5 bg-green-600/30 border border-green-500 text-green-400 text-[10px] font-bold rounded-full">👍 추천</span>
+                    ) : (
+                      <span className="px-2 py-0.5 bg-red-600/30 border border-red-500 text-red-400 text-[10px] font-bold rounded-full">👎 비추천</span>
+                    )}
+
                     <span className="text-yellow-400 text-sm font-bold">★ {Number(review.rating).toFixed(1)}</span>
                   </div>
                 </div>
@@ -252,11 +275,16 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
 
     const profiles = {}; 
     
+    // 🚨 'both' 일 경우 likes와 dislikes 배열 양쪽에 모두 넣어서 일치도 평가
     allRatings.forEach(r => {
       if (r.uid === myRatings[0].uid) return; 
       if (!profiles[r.uid]) profiles[r.uid] = { id: r.uid, name: r.nickname, avatar: '👤', likes: [], dislikes: [], ratedIds: new Set() };
       profiles[r.uid].ratedIds.add(r.id);
-      if (r.isRecommend) profiles[r.uid].likes.push(r);
+      
+      if (r.isRecommend === 'both') {
+         profiles[r.uid].likes.push(r);
+         profiles[r.uid].dislikes.push(r);
+      } else if (r.isRecommend) profiles[r.uid].likes.push(r);
       else profiles[r.uid].dislikes.push(r);
     });
 
@@ -264,12 +292,16 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
       const criticId = `critic_${r.reviewerName}`;
       if (!profiles[criticId]) profiles[criticId] = { id: criticId, name: `${r.reviewerName} (평론가)`, avatar: '🎬', likes: [], dislikes: [], ratedIds: new Set() };
       profiles[criticId].ratedIds.add(r.id);
-      if (r.isRecommend) profiles[criticId].likes.push(r);
+      
+      if (r.isRecommend === 'both') {
+         profiles[criticId].likes.push(r);
+         profiles[criticId].dislikes.push(r);
+      } else if (r.isRecommend) profiles[criticId].likes.push(r);
       else profiles[criticId].dislikes.push(r);
     });
 
-    const myLikes = new Set(myRatings.filter(r => r.isRecommend).map(r => r.id));
-    const myDislikes = new Set(myRatings.filter(r => !r.isRecommend).map(r => r.id));
+    const myLikes = new Set(myRatings.filter(r => r.isRecommend === true || r.isRecommend === 'both').map(r => r.id));
+    const myDislikes = new Set(myRatings.filter(r => r.isRecommend === false || r.isRecommend === 'both').map(r => r.id));
     const myRatedIds = new Set(myRatings.map(r => r.id));
 
     const results = [];
@@ -417,7 +449,19 @@ const MyRatingsSection = ({ myRatingsData, onMovieClick, onDeleteRating, onEditR
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1 mt-6 sm:mt-0">
                 <h3 className="text-xl font-bold text-white cursor-pointer hover:text-red-400 transition-colors" onClick={() => onMovieClick(item)}>{item.title}</h3>
-                {item.isRecommend ? <span className="text-green-400 text-[10px] border border-green-400 px-2 py-0.5 rounded w-max">👍 추천</span> : <span className="text-red-400 text-[10px] border border-red-400 px-2 py-0.5 rounded w-max">👎 비추천</span>}
+                
+                {/* 🚨 양방향 추천 표시 로직 */}
+                {item.isRecommend === 'both' ? (
+                  <div className="flex gap-1">
+                    <span className="text-green-400 text-[10px] border border-green-400 px-2 py-0.5 rounded w-max">👍 추천</span>
+                    <span className="text-red-400 text-[10px] border border-red-400 px-2 py-0.5 rounded w-max">👎 비추천</span>
+                  </div>
+                ) : item.isRecommend ? (
+                  <span className="text-green-400 text-[10px] border border-green-400 px-2 py-0.5 rounded w-max">👍 추천</span>
+                ) : (
+                  <span className="text-red-400 text-[10px] border border-red-400 px-2 py-0.5 rounded w-max">👎 비추천</span>
+                )}
+                
               </div>
               <div className="text-yellow-400 font-bold mb-1">★ {Number(item.rating).toFixed(1)}</div>
               <div className="text-gray-500 text-xs mb-2">등록일: {item.date ? new Date(item.date).toLocaleDateString('ko-KR') : '날짜 없음'}</div>
@@ -654,7 +698,6 @@ const BoardWriteModal = ({ isOpen, onClose, user, type, onPostAdded }) => {
     }
   };
 
-  // 🚨 창 닫기 안전장치 적용
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-[80] p-4" onClick={onClose}>
       <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl p-6 text-white shadow-2xl flex flex-col h-[85vh]" onClick={e => e.stopPropagation()}>
@@ -818,7 +861,6 @@ const ReviewModal = ({ isOpen, onClose, onAddRating, onUpdateRating, user, initi
     }
   };
 
-  // 🚨 창 닫기 안전장치 적용
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-[80] p-4" onClick={onClose}>
       <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-lg p-6 text-white shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -843,7 +885,6 @@ const ReviewModal = ({ isOpen, onClose, onAddRating, onUpdateRating, user, initi
                 </div>
               )}
             </div>
-            {/* 🚨 취소 버튼 추가 */}
             <button onClick={onClose} className="w-full mt-4 bg-gray-700 hover:bg-gray-600 py-3 font-bold text-white rounded transition-colors">닫기</button>
           </div>
         ) : (
@@ -878,7 +919,6 @@ const ReviewModal = ({ isOpen, onClose, onAddRating, onUpdateRating, user, initi
             <textarea className="w-full p-4 bg-gray-800 rounded text-white resize-none h-24 border border-gray-700 focus:border-red-500 outline-none" placeholder="한줄평을 남겨주세요." value={reviewText} onChange={e => setReviewText(e.target.value)} />
             
             <div className="flex gap-3">
-              {/* 🚨 취소 버튼 추가 */}
               <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-4 font-bold rounded shadow-lg transition-colors">취소</button>
               <button onClick={handleSubmit} className="flex-1 bg-red-600 hover:bg-red-700 py-4 font-extrabold text-lg rounded shadow-lg transition-colors">
                 {editingReview ? '수정 완료' : 'DB에 등록하기'}
@@ -937,12 +977,32 @@ const AdminCinemaInputRow = ({ label, value, onChange, isNewRelease, isOther }) 
            <img src={value.poster} alt="" className="w-12 h-16 object-cover rounded shadow-md" />
            <span className="font-bold text-sm text-white">{value.title}</span>
          </div>
+         
+         {/* 🚨 신작 전용: 추천/비추천 동시 선택 가능 로직 */}
          {isNewRelease && (
+           <div className="flex gap-2 mb-2">
+             <button onClick={() => {
+               if (value.isRecommend === 'both') onChange({...value, isRecommend: false});
+               else if (value.isRecommend === false) onChange({...value, isRecommend: 'both'});
+               else if (value.isRecommend === true) alert('최소 하나의 평가는 선택해야 합니다. (비추천을 누르면 동시 선택됩니다.)'); 
+             }} className={`flex-1 py-1.5 rounded text-sm font-bold ${(value.isRecommend === true || value.isRecommend === 'both') ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-400'}`}>👍 추천</button>
+             
+             <button onClick={() => {
+               if (value.isRecommend === 'both') onChange({...value, isRecommend: true});
+               else if (value.isRecommend === true) onChange({...value, isRecommend: 'both'});
+               else if (value.isRecommend === false) alert('최소 하나의 평가는 선택해야 합니다. (추천을 누르면 동시 선택됩니다.)');
+             }} className={`flex-1 py-1.5 rounded text-sm font-bold ${(value.isRecommend === false || value.isRecommend === 'both') ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400'}`}>👎 비추천</button>
+           </div>
+         )}
+
+         {/* 기타 패널: 기존처럼 단일 선택 */}
+         {!isNewRelease && (
            <div className="flex gap-2 mb-2">
              <button onClick={() => onChange({...value, isRecommend: true})} className={`flex-1 py-1.5 rounded text-sm font-bold ${value.isRecommend ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-400'}`}>👍 추천</button>
              <button onClick={() => onChange({...value, isRecommend: false})} className={`flex-1 py-1.5 rounded text-sm font-bold ${!value.isRecommend ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400'}`}>👎 비추천</button>
            </div>
          )}
+         
          <textarea placeholder="한줄평 (선택)" value={value.comment} onChange={e => onChange({...value, comment: e.target.value})} className="w-full p-2 bg-gray-900 text-white rounded text-sm resize-none h-12 border border-gray-700 outline-none focus:border-red-500" />
       </div>
     );
@@ -972,7 +1032,6 @@ const AdminCinemaInputRow = ({ label, value, onChange, isNewRelease, isOther }) 
   );
 };
 
-// 🚨 창 닫기 안전장치 적용
 const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
   const [date, setDate] = useState(getRecentFridayKST());
   
@@ -1029,10 +1088,12 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
           if (entry.data.title.trim()) {
             hasData = true;
             const finalPanelName = entry.panel === '기타' ? ((entry.data.otherName === '직접입력' ? entry.data.customName : entry.data.otherName) || '기타') : entry.panel;
+            
+            // 🚨 신작 둘다 추천('both') 시 평점 조율 로직 
             const reviewObj = {
               id: entry.data.movieId || Date.now() + Math.random(),
               title: entry.data.title, poster: entry.data.poster,
-              rating: entry.panel === '신작' ? (entry.data.isRecommend ? 8.0 : 4.0) : 8.0, 
+              rating: entry.panel === '신작' ? (entry.data.isRecommend === 'both' ? 6.0 : (entry.data.isRecommend ? 8.0 : 4.0)) : 8.0, 
               isRecommend: entry.panel === '신작' ? entry.data.isRecommend : true,
               comment: entry.data.comment || '한줄평 없음',
               panelName: entry.panel, reviewerName: finalPanelName, broadcastDate: date
@@ -1060,9 +1121,7 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
   if (!isOpen) return null;
 
   return (
-    // 🚨 배경을 클릭하면 onClose가 실행되어 모달이 닫히도록 수정
     <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-[80] p-4" onClick={onClose}>
-      {/* 🚨 안쪽 흰색/검은색 박스를 눌렀을 때는 안 닫히도록 이벤트 전파 방지(stopPropagation) */}
       <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-xl p-6 text-white max-h-[90vh] flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4 shrink-0">
           <h2 className="text-xl font-bold text-red-500">{editData ? '🎬 시네마지옥 기록 수정' : '🎬 시네마지옥 일괄 등록'}</h2>
@@ -1080,7 +1139,6 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
           <AdminCinemaInputRow label="[기타 게스트]" value={other} onChange={setOther} isOther={true} />
         </div>
         
-        {/* 🚨 하단에 큼직한 취소 버튼을 추가하여 언제든 빠져나갈 수 있게 보강 */}
         <div className="mt-6 flex gap-3 shrink-0">
           <button onClick={onClose} className="flex-1 bg-gray-700 hover:bg-gray-600 py-4 font-bold rounded-xl text-lg transition-colors">취소</button>
           <button onClick={handleSubmit} className="flex-1 bg-red-600 hover:bg-red-700 py-4 font-bold rounded-xl text-lg shadow-lg transition-colors">
@@ -1187,7 +1245,19 @@ const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
                       <div className="flex flex-col justify-center w-full overflow-hidden">
                         <div className="flex justify-between items-start mb-1">
                           <h4 className="text-md font-bold text-white leading-tight truncate pr-2">{review.title}</h4>
-                          {review.isRecommend ? <span className="text-green-400 text-[10px] border border-green-500 px-1 rounded shrink-0">추천</span> : <span className="text-red-400 text-[10px] border border-red-500 px-1 rounded shrink-0">비추천</span>}
+                          
+                          {/* 🚨 양방향 추천 표시 */}
+                          {review.isRecommend === 'both' ? (
+                            <div className="flex gap-1 shrink-0">
+                              <span className="text-green-400 text-[10px] border border-green-500 px-1 rounded">추천</span>
+                              <span className="text-red-400 text-[10px] border border-red-500 px-1 rounded">비추천</span>
+                            </div>
+                          ) : review.isRecommend ? (
+                            <span className="text-green-400 text-[10px] border border-green-500 px-1 rounded shrink-0">추천</span>
+                          ) : (
+                            <span className="text-red-400 text-[10px] border border-red-500 px-1 rounded shrink-0">비추천</span>
+                          )}
+
                         </div>
                         <div className="text-yellow-400 text-sm font-bold mb-1">★ {Number(review.rating).toFixed(1)}</div>
                         <p className="text-gray-300 text-xs truncate">"{review.comment}"</p>
@@ -1207,7 +1277,19 @@ const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
                 <div className="flex flex-col justify-center w-full overflow-hidden">
                   <div className="flex justify-between items-start mb-1">
                     <h4 className="text-md font-bold text-white leading-tight truncate pr-2">{review.title}</h4>
-                    {review.isRecommend ? <span className="text-green-400 text-[10px] border border-green-500 px-1 rounded shrink-0">추천</span> : <span className="text-red-400 text-[10px] border border-red-500 px-1 rounded shrink-0">비추천</span>}
+                    
+                    {/* 🚨 양방향 추천 표시 */}
+                    {review.isRecommend === 'both' ? (
+                      <div className="flex gap-1 shrink-0">
+                        <span className="text-green-400 text-[10px] border border-green-500 px-1 rounded">추천</span>
+                        <span className="text-red-400 text-[10px] border border-red-500 px-1 rounded">비추천</span>
+                      </div>
+                    ) : review.isRecommend ? (
+                      <span className="text-green-400 text-[10px] border border-green-500 px-1 rounded shrink-0">추천</span>
+                    ) : (
+                      <span className="text-red-400 text-[10px] border border-red-500 px-1 rounded shrink-0">비추천</span>
+                    )}
+
                   </div>
                   <div className="text-yellow-400 text-sm font-bold mb-1">★ {Number(review.rating).toFixed(1)}</div>
                   <span className="text-gray-500 text-[10px] mb-1">{review.broadcastDate}</span>
@@ -1296,6 +1378,7 @@ function MainApp() {
 
       const movieMap = new Map();
 
+      // 🚨 'both' 평가 카운팅 로직 추가
       tempAllRatings.forEach(data => {
         if (!movieMap.has(data.id)) {
           movieMap.set(data.id, { id: data.id, title: data.title, poster: data.poster, totalRating: 0, count: 0, recommends: 0, notRecommends: 0, latestDate: data.date });
@@ -1303,7 +1386,8 @@ function MainApp() {
         const m = movieMap.get(data.id);
         m.totalRating += data.rating;
         m.count += 1;
-        if (data.isRecommend) m.recommends += 1;
+        if (data.isRecommend === 'both') { m.recommends += 1; m.notRecommends += 1; }
+        else if (data.isRecommend) m.recommends += 1;
         else m.notRecommends += 1;
         if (new Date(data.date) > new Date(m.latestDate)) m.latestDate = data.date;
       });
@@ -1315,7 +1399,8 @@ function MainApp() {
         const m = movieMap.get(data.id);
         m.totalRating += data.rating;
         m.count += 1;
-        if (data.isRecommend) m.recommends += 1;
+        if (data.isRecommend === 'both') { m.recommends += 1; m.notRecommends += 1; }
+        else if (data.isRecommend) m.recommends += 1;
         else m.notRecommends += 1;
         if (new Date(data.date) > new Date(m.latestDate)) m.latestDate = data.date;
       });
