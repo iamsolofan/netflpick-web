@@ -48,7 +48,8 @@ const getRecentFridayKST = () => {
 const myTopPickMovie = {
   id: 999999,
   title: '세계의 주인',
-  poster: `https://image.tmdb.org/t/p/w500/tPzEVK4mJ820iXkR1iG2X9b4ZtM.jpg`,
+  // 🚨 엑스박스 방지를 위해 텍스트가 적힌 깔끔한 대체 이미지로 변경
+  poster: `https://placehold.co/500x750/333333/FFFFFF?text=%EC%84%B8%EA%B3%84%EC%9D%98+%EC%A3%BC%EC%9D%B8`,
   rating: 10.0, 
   isRecommend: true,
   recommends: 9999,
@@ -96,7 +97,8 @@ const Top10Section = ({ title, movies, isWorst = false, onMovieClick }) => {
       {movies.length === 0 ? (
         <div className="h-48 flex items-center justify-center text-gray-500 border border-gray-800 rounded-lg">영화 데이터를 불러오는 중입니다...</div>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
+        {/* 🚨 한 줄에 5개 고정: lg:grid-cols-5 */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
           {sortedMovies.slice(0, 10).map((movie, index) => (
             <MovieCard key={`${movie.id}-${index}`} movie={movie} isWorst={isWorst} onMovieClick={onMovieClick} />
           ))}
@@ -110,11 +112,21 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const movie = location.state?.movie;
-  const [reviewMode, setReviewMode] = useState('collapsed'); // collapsed: 최대 3개, expanded: 전체
+  const [reviewMode, setReviewMode] = useState('collapsed'); 
+  const [tmdbInfo, setTmdbInfo] = useState(null); // 🚨 TMDB 추가 정보 상태
 
   useEffect(() => {
-    if (movie) document.title = `${movie.title} 평점 및 한줄평 모음 - 넷플픽`;
-    else navigate('/'); 
+    if (movie) {
+      document.title = `${movie.title} 평점 및 한줄평 모음 - 넷플픽`;
+      
+      // 🚨 TMDB 영화 상세 정보 API 호출 (세계의 주인은 가짜 ID라 제외)
+      if (movie.id && movie.id !== 999999) {
+        fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=ko-KR`)
+          .then(res => res.json())
+          .then(data => setTmdbInfo(data))
+          .catch(err => console.error(err));
+      }
+    } else navigate('/'); 
   }, [movie, navigate]);
 
   const dummyReviews = useMemo(() => {
@@ -140,48 +152,62 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
   const displayReviews = reviewMode === 'collapsed' ? dummyReviews.slice(0, 3) : dummyReviews;
 
   return (
-    <div className="max-w-4xl mx-auto animate-fadeIn mt-4">
-      <div className="flex flex-col md:flex-row gap-8 mb-12 bg-gray-800 p-6 md:p-10 rounded-2xl border border-gray-700 shadow-2xl">
-        <img src={movie.poster} alt={movie.title} className="w-48 md:w-64 h-auto object-cover rounded-xl shadow-lg shrink-0 mx-auto md:mx-0" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(movie.title)}`; }} />
-        <div className="flex flex-col justify-center flex-1 text-center md:text-left">
-          <h2 className="text-4xl font-extrabold text-white mb-4">{movie.title}</h2>
-          <div className="text-yellow-400 font-extrabold text-3xl mb-6">★ {Number(movie.rating).toFixed(1)} <span className="text-gray-500 text-lg">/ 10</span></div>
-          <div className="flex justify-center md:justify-start gap-4 text-sm font-bold mb-8">
-            <span className="text-green-400 bg-green-900/30 px-5 py-2 rounded-full border border-green-800">👍 추천 {movie.recommends || 150}명</span>
-            <span className="text-red-400 bg-red-900/30 px-5 py-2 rounded-full border border-red-800">👎 비추천 {movie.notRecommends || 10}명</span>
+    // 🚨 max-w-2xl로 전체 너비 대폭 축소
+    <div className="max-w-2xl mx-auto animate-fadeIn mt-4">
+      {/* 🚨 안쪽 여백(p-4 md:p-6)과 요소 사이 간격(gap-5) 축소 */}
+      <div className="flex flex-col sm:flex-row gap-5 mb-8 bg-gray-800 p-4 md:p-6 rounded-2xl border border-gray-700 shadow-xl">
+        {/* 🚨 포스터 크기 축소: w-32 md:w-40 */}
+        <img src={movie.poster} alt={movie.title} className="w-32 md:w-40 h-auto object-cover rounded-xl shadow-lg shrink-0 mx-auto sm:mx-0" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(movie.title)}`; }} />
+        <div className="flex flex-col justify-center flex-1 text-center sm:text-left">
+          <h2 className="text-xl md:text-2xl font-extrabold text-white mb-2">{movie.title}</h2>
+          <div className="text-yellow-400 font-extrabold text-xl mb-3">★ {Number(movie.rating).toFixed(1)} <span className="text-gray-500 text-sm font-normal">/ 10</span></div>
+          
+          <div className="flex justify-center sm:justify-start gap-2 text-xs font-bold mb-4">
+            <span className="text-green-400 bg-green-900/30 px-3 py-1 rounded-full border border-green-800">👍 {movie.recommends || 150}명</span>
+            <span className="text-red-400 bg-red-900/30 px-3 py-1 rounded-full border border-red-800">👎 {movie.notRecommends || 10}명</span>
           </div>
-          <button onClick={() => onOpenReviewForm(movie)} className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all text-lg mb-4">
+
+          {/* 🚨 TMDB 영화 정보 표시 영역 추가 */}
+          {tmdbInfo && tmdbInfo.overview && (
+            <div className="text-left bg-gray-900/60 p-3 rounded-lg border border-gray-700 mb-4 text-xs">
+              <p className="text-gray-300 mb-1"><span className="font-bold text-gray-400">개봉:</span> {tmdbInfo.release_date}</p>
+              <p className="text-gray-300 mb-2"><span className="font-bold text-gray-400">장르:</span> {tmdbInfo.genres?.map(g => g.name).join(', ')}</p>
+              <p className="text-gray-400 line-clamp-3 leading-relaxed">{tmdbInfo.overview}</p>
+            </div>
+          )}
+
+          <button onClick={() => onOpenReviewForm(movie)} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl shadow-lg transition-all text-sm w-full">
             ✏️ 나도 이 영화 평점 남기기
           </button>
         </div>
       </div>
 
-      <div className="bg-gray-800 rounded-2xl p-6 md:p-10 border border-gray-700 shadow-xl mb-20 text-left">
-        <h3 className="text-2xl font-bold text-white mb-6 border-l-4 border-red-600 pl-3">솔직한 리뷰 ({dummyReviews.length}건)</h3>
-        <div className="flex flex-col gap-4 mb-6">
+      <div className="bg-gray-800 rounded-2xl p-4 md:p-6 border border-gray-700 shadow-xl mb-12 text-left">
+        <h3 className="text-lg md:text-xl font-bold text-white mb-4 border-l-4 border-red-600 pl-3">솔직한 리뷰 ({dummyReviews.length}건)</h3>
+        <div className="flex flex-col gap-3 mb-5">
           {displayReviews.map((review, i) => (
-            <div key={review.id || i} className="bg-gray-900 p-5 rounded-xl border border-gray-700 hover:border-gray-500 transition-colors">
-               <div className="flex justify-between items-center mb-3">
-                 <div className="flex items-center gap-3">
-                   <span className="text-white font-bold">{review.nickname}</span>
-                   {review.isRecommend ? <span className="text-green-400 text-xs border border-green-500 px-2 py-0.5 rounded bg-green-900/20">추천</span> : <span className="text-red-400 text-xs border border-red-500 px-2 py-0.5 rounded bg-red-900/20">비추천</span>}
+            <div key={review.id || i} className="bg-gray-900 p-3.5 rounded-xl border border-gray-700 hover:border-gray-500 transition-colors">
+               <div className="flex justify-between items-center mb-1.5">
+                 <div className="flex items-center gap-2">
+                   <span className="text-white font-bold text-xs">{review.nickname}</span>
+                   {review.isRecommend ? <span className="text-green-400 text-[10px] border border-green-500 px-1.5 py-0.5 rounded bg-green-900/20">추천</span> : <span className="text-red-400 text-[10px] border border-red-500 px-1.5 py-0.5 rounded bg-red-900/20">비추천</span>}
                  </div>
-                 <span className="text-yellow-400 font-bold text-lg">★ {Number(review.rating).toFixed(1)}</span>
+                 <span className="text-yellow-400 font-bold text-sm">★ {Number(review.rating).toFixed(1)}</span>
                </div>
-               <p className="text-gray-300 text-base leading-relaxed">"{review.comment}"</p>
-               <div className="text-gray-600 text-xs text-right mt-2">{review.date}</div>
+               <p className="text-gray-300 text-xs leading-relaxed">"{review.comment}"</p>
+               <div className="text-gray-600 text-[10px] text-right mt-1">{review.date}</div>
             </div>
           ))}
         </div>
         
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           {reviewMode === 'collapsed' && dummyReviews.length > 3 && (
-            <button onClick={() => setReviewMode('expanded')} className="flex-1 py-4 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl transition-colors border border-gray-600">
+            <button onClick={() => setReviewMode('expanded')} className="flex-1 py-2.5 bg-gray-700 hover:bg-gray-600 text-white font-bold text-xs rounded-xl transition-colors border border-gray-600">
               더 많은 리뷰 보기 ▼
             </button>
           )}
           {reviewMode === 'expanded' && (
-            <button onClick={() => setReviewMode('collapsed')} className="flex-1 py-4 bg-gray-900 hover:bg-black text-gray-400 font-bold rounded-xl transition-colors border border-gray-700">
+            <button onClick={() => setReviewMode('collapsed')} className="flex-1 py-2.5 bg-gray-900 hover:bg-black text-gray-400 font-bold text-xs rounded-xl transition-colors border border-gray-700">
               솔직한 영화평 접기 ▲
             </button>
           )}
@@ -190,6 +216,9 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
     </div>
   );
 };
+
+// ... 이하 모든 컴포넌트(게시판, 모달, MainApp 등)는 기존 코드와 동일하게 유지
+// 복사 붙여넣기 하실 때 이 주석 아래로는 기존 코드를 그대로 두시면 됩니다.
 
 const BoardListPage = ({ user, onLoginRequired }) => {
   const { type } = useParams();
@@ -458,9 +487,6 @@ const BoardWriteModal = ({ isOpen, onClose, user, type, onPostAdded }) => {
 };
 
 
-// ==========================================
-// 기존 모달 및 서브 컴포넌트 
-// ==========================================
 const LoginRequiredMessage = ({ onLoginClick }) => (
   <div className="flex flex-col items-center justify-center py-20 text-center animate-fadeIn border border-gray-700 rounded-xl bg-gray-800 shadow-xl">
     <span className="text-6xl mb-4">🔒</span>
@@ -1135,7 +1161,6 @@ function MainApp() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 font-sans p-6 md:p-12">
-      {/* 🚨 레이아웃 수정된 Header */}
       <header className="mb-10 flex flex-col gap-4">
         <div className="flex justify-between items-center w-full">
           <h1 className="text-3xl font-extrabold text-red-600 cursor-pointer shrink-0" onClick={() => handleMenuClick('home')}>NETFL<span className="text-white">PICK</span></h1>
