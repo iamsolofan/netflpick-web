@@ -405,7 +405,6 @@ const MyRatingsSection = ({ myRatingsData, onMovieClick, onDeleteRating, onEditR
       <div className="flex flex-col gap-4">
         {sortedRatings.map((item, idx) => (
           <div key={idx} className="bg-gray-800 p-4 rounded-xl border border-gray-700 flex gap-6 items-center relative pr-32">
-            {/* 🚨 수정 및 삭제 버튼 */}
             <div className="absolute top-4 right-4 flex gap-2 z-10">
               <button onClick={(e) => { e.stopPropagation(); onEditRating(item); }} className="bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600 text-xs px-3 py-1.5 rounded transition-colors font-bold">
                 수정
@@ -791,7 +790,6 @@ const ReviewModal = ({ isOpen, onClose, onAddRating, onUpdateRating, user, initi
     if (isRecommend === null || rating === 0) return alert("추천 여부와 평점을 선택해주세요!");
     
     if (editingReview) {
-      // 🚨 수정 로직
       const updatedObj = {
         ...editingReview,
         rating: Number(rating), isRecommend, comment: reviewText || '평가 완료', date: new Date().toISOString() 
@@ -802,7 +800,6 @@ const ReviewModal = ({ isOpen, onClose, onAddRating, onUpdateRating, user, initi
         onClose();
       } catch (e) { alert("수정 중 오류가 발생했습니다."); }
     } else {
-      // 🚨 신규 등록 로직
       const hasAlreadyRated = myRatings.some(r => String(r.id) === String(selectedMovie.id));
       if (hasAlreadyRated) {
         return alert("이미 평점을 남기신 영화입니다.");
@@ -912,7 +909,7 @@ const AdminCinemaInputRow = ({ label, value, onChange, isNewRelease, isOther }) 
       <div className="mb-4 bg-gray-800 p-4 rounded-lg border border-gray-700">
          <div className="flex justify-between items-center mb-2">
            <h3 className="font-bold text-white text-lg">{label}</h3>
-           <button onClick={() => onChange({...value, title: '', movieId: null, poster: ''})} className="text-xs bg-gray-700 px-2 py-1 rounded">다시 검색</button>
+           <button onClick={() => onChange({...value, title: '', movieId: null, poster: ''})} className="text-xs bg-gray-700 px-2 py-1 rounded">다시 검색 (삭제하려면 누르세요)</button>
          </div>
          {isOther && (
             <div className="mb-2 flex gap-2">
@@ -967,17 +964,49 @@ const AdminCinemaInputRow = ({ label, value, onChange, isNewRelease, isOther }) 
   );
 };
 
-const AdminCinemaModal = ({ isOpen, onClose, onAddCinemaReview }) => {
+// 🚨 관리자 수정 모달 로직 적용
+const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
   const [date, setDate] = useState(getRecentFridayKST());
-  const [newRelease, setNewRelease] = useState({ title: '', isRecommend: true, comment: '' });
-  const [jeon, setJeon] = useState({ title: '', comment: '' });
-  const [liner, setLiner] = useState({ title: '', comment: '' });
-  const [none, setNone] = useState({ title: '', comment: '' });
-  const [choiG, setChoiG] = useState({ title: '', comment: '' });
-  const [choiW, setChoiW] = useState({ title: '', comment: '' });
-  const [other, setOther] = useState({ title: '', comment: '', otherName: '배순탁', customName: '' });
+  
+  const initialFormState = { title: '', isRecommend: true, comment: '', docId: null, movieId: null, poster: '' };
+  
+  const [newRelease, setNewRelease] = useState({ ...initialFormState });
+  const [jeon, setJeon] = useState({ ...initialFormState });
+  const [liner, setLiner] = useState({ ...initialFormState });
+  const [none, setNone] = useState({ ...initialFormState });
+  const [choiG, setChoiG] = useState({ ...initialFormState });
+  const [choiW, setChoiW] = useState({ ...initialFormState });
+  const [other, setOther] = useState({ ...initialFormState, otherName: '배순탁', customName: '' });
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen) {
+      if (editData && editData.length > 0) {
+        setDate(editData[0].broadcastDate);
+        let nR = { ...initialFormState }, j = { ...initialFormState }, l = { ...initialFormState }, n = { ...initialFormState }, cG = { ...initialFormState }, cW = { ...initialFormState }, o = { ...initialFormState, otherName: '배순탁', customName: '' };
+        
+        editData.forEach(r => {
+          const mappedData = { title: r.title, poster: r.poster, isRecommend: r.isRecommend, comment: r.comment, movieId: r.id, docId: r.dbId };
+          if (r.panelName === '신작') nR = mappedData;
+          else if (r.panelName === '전찬일') j = mappedData;
+          else if (r.panelName === '라이너') l = mappedData;
+          else if (r.panelName === '거의없다') n = mappedData;
+          else if (r.panelName === '최광희') cG = mappedData;
+          else if (r.panelName === '최욱') cW = mappedData;
+          else if (r.panelName === '기타') {
+            o = { ...mappedData, otherName: '직접입력', customName: r.reviewerName };
+            if (['배순탁', '주성철', '송경원', '달시파켓'].includes(r.reviewerName)) {
+              o.otherName = r.reviewerName;
+              o.customName = '';
+            }
+          }
+        });
+        setNewRelease(nR); setJeon(j); setLiner(l); setNone(n); setChoiG(cG); setChoiW(cW); setOther(o);
+      } else {
+        setDate(getRecentFridayKST());
+        setNewRelease({ ...initialFormState }); setJeon({ ...initialFormState }); setLiner({ ...initialFormState }); setNone({ ...initialFormState }); setChoiG({ ...initialFormState }); setChoiW({ ...initialFormState }); setOther({ ...initialFormState, otherName: '배순탁', customName: '' });
+      }
+    }
+  }, [isOpen, editData]);
 
   const handleSubmit = async () => {
     const entries = [
@@ -985,35 +1014,39 @@ const AdminCinemaModal = ({ isOpen, onClose, onAddCinemaReview }) => {
       { panel: '거의없다', data: none }, { panel: '최광희', data: choiG }, { panel: '최욱', data: choiW }, { panel: '기타', data: other },
     ];
 
-    const newReviews = [];
-    for (const entry of entries) {
-      if (entry.data.title.trim()) {
-        const finalPanelName = entry.panel === '기타' ? ((entry.data.otherName === '직접입력' ? entry.data.customName : entry.data.otherName) || '기타') : entry.panel;
-        const reviewObj = {
-          id: entry.data.movieId || Date.now() + Math.random(),
-          title: entry.data.title, poster: entry.data.poster,
-          rating: entry.panel === '신작' ? (entry.data.isRecommend ? 8.0 : 4.0) : 8.0, 
-          isRecommend: entry.panel === '신작' ? entry.data.isRecommend : true,
-          comment: entry.data.comment || '한줄평 없음',
-          panelName: entry.panel, reviewerName: finalPanelName, broadcastDate: date
-        };
-        newReviews.push(reviewObj);
-      }
-    }
-    if(newReviews.length === 0) return alert("등록할 작품 제목을 최소 하나 이상 검색/입력해주세요.");
-    
+    let hasData = false;
     try {
       if (db) {
-        for (const review of newReviews) {
-          await addDoc(collection(db, "cinema_reviews"), review);
+        for (const entry of entries) {
+          if (entry.data.title.trim()) {
+            hasData = true;
+            const finalPanelName = entry.panel === '기타' ? ((entry.data.otherName === '직접입력' ? entry.data.customName : entry.data.otherName) || '기타') : entry.panel;
+            const reviewObj = {
+              id: entry.data.movieId || Date.now() + Math.random(),
+              title: entry.data.title, poster: entry.data.poster,
+              rating: entry.panel === '신작' ? (entry.data.isRecommend ? 8.0 : 4.0) : 8.0, 
+              isRecommend: entry.panel === '신작' ? entry.data.isRecommend : true,
+              comment: entry.data.comment || '한줄평 없음',
+              panelName: entry.panel, reviewerName: finalPanelName, broadcastDate: date
+            };
+            
+            if (entry.data.docId) {
+              await updateDoc(doc(db, "cinema_reviews", entry.data.docId), reviewObj);
+            } else {
+              await addDoc(collection(db, "cinema_reviews"), reviewObj);
+            }
+          } else if (entry.data.docId) {
+            // DB에는 있는데 입력칸이 비워졌다면 삭제 요청이므로 삭제 처리
+            await deleteDoc(doc(db, "cinema_reviews", entry.data.docId));
+          }
         }
       }
-      onAddCinemaReview(newReviews);
-      setNewRelease({ title: '', isRecommend: true, comment: '' }); setJeon({ title: '', comment: '' }); setLiner({ title: '', comment: '' });
-      setNone({ title: '', comment: '' }); setChoiG({ title: '', comment: '' }); setChoiW({ title: '', comment: '' }); setOther({ title: '', comment: '', otherName: '배순탁', customName: '' });
+      if (!hasData && !editData) return alert("등록할 작품 제목을 최소 하나 이상 검색/입력해주세요.");
+      
+      onRefresh();
       onClose();
     } catch(e) {
-      alert("DB 저장에 실패했습니다.");
+      alert("DB 저장/수정에 실패했습니다.");
     }
   };
 
@@ -1021,7 +1054,7 @@ const AdminCinemaModal = ({ isOpen, onClose, onAddCinemaReview }) => {
     <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-[80] p-4">
       <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-xl p-6 text-white max-h-[90vh] flex flex-col shadow-2xl">
         <div className="flex justify-between items-center mb-4 shrink-0">
-          <h2 className="text-xl font-bold text-red-500">🎬 시네마지옥 일괄 등록</h2>
+          <h2 className="text-xl font-bold text-red-500">{editData ? '🎬 시네마지옥 기록 수정' : '🎬 시네마지옥 일괄 등록'}</h2>
           <button onClick={onClose} className="text-gray-400 text-2xl font-bold hover:text-white">&times;</button>
         </div>
         <div className="overflow-y-auto flex-1 pr-2 custom-scrollbar">
@@ -1035,35 +1068,46 @@ const AdminCinemaModal = ({ isOpen, onClose, onAddCinemaReview }) => {
           <AdminCinemaInputRow label="[최욱]" value={choiW} onChange={setChoiW} />
           <AdminCinemaInputRow label="[기타 게스트]" value={other} onChange={setOther} isOther={true} />
         </div>
-        <button onClick={handleSubmit} className="w-full mt-6 bg-red-600 hover:bg-red-700 py-4 font-bold rounded-xl text-lg shadow-lg shrink-0 transition-colors">기록 일괄 등록하기</button>
+        <button onClick={handleSubmit} className="w-full mt-6 bg-red-600 hover:bg-red-700 py-4 font-bold rounded-xl text-lg shadow-lg shrink-0 transition-colors">
+          {editData ? '수정 사항 저장하기' : '기록 일괄 등록하기'}
+        </button>
       </div>
     </div>
   );
 };
 
-const CinemaHellSection = ({ isAdmin, onMovieClick }) => {
+const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
   const [activePanel, setActivePanel] = useState('전체');
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [editData, setEditData] = useState(null); // 수정할 데이터 보관
   const [cinemaReviews, setCinemaReviews] = useState([]);
 
+  const fetchCinemaReviews = async () => {
+    if (!db) return;
+    try {
+      const q = query(collection(db, "cinema_reviews"), orderBy("broadcastDate", "desc"));
+      const snap = await getDocs(q);
+      const fetched = [];
+      snap.forEach(doc => fetched.push({ dbId: doc.id, ...doc.data() }));
+      setCinemaReviews(fetched);
+      if (onRefreshGlobal) onRefreshGlobal();
+    } catch (e) {
+      console.error("시네마지옥 기록 로딩 실패:", e);
+    }
+  };
+
   useEffect(() => {
-    const fetchCinemaReviews = async () => {
-      if (!db) return;
-      try {
-        const q = query(collection(db, "cinema_reviews"), orderBy("broadcastDate", "desc"));
-        const snap = await getDocs(q);
-        const fetched = [];
-        snap.forEach(doc => fetched.push({ dbId: doc.id, ...doc.data() }));
-        setCinemaReviews(fetched);
-      } catch (e) {
-        console.error("시네마지옥 기록 로딩 실패:", e);
-      }
-    };
     fetchCinemaReviews();
   }, []);
 
-  const handleAddCinemaReview = (newReviewsArray) => {
-    setCinemaReviews(prev => [...newReviewsArray, ...prev]);
+  const openNewModal = () => {
+    setEditData(null);
+    setIsAdminModalOpen(true);
+  };
+
+  const openEditModal = (reviewsForDate) => {
+    setEditData(reviewsForDate);
+    setIsAdminModalOpen(true);
   };
 
   const groupedByDate = useMemo(() => {
@@ -1076,6 +1120,18 @@ const CinemaHellSection = ({ isAdmin, onMovieClick }) => {
     }, {});
   }, [cinemaReviews, activePanel]);
 
+  // 🚨 최광희, 최욱 3개 이상일 때만 메뉴에 띄우기
+  const panelCounts = useMemo(() => {
+    const counts = {};
+    cinemaReviews.forEach(r => { counts[r.panelName] = (counts[r.panelName] || 0) + 1; });
+    return counts;
+  }, [cinemaReviews]);
+
+  const visiblePanels = CINEMA_HELL_PANELS.filter(panel => {
+    if (panel === '최광희' || panel === '최욱') return (panelCounts[panel] || 0) >= 3;
+    return true;
+  });
+
   const filteredReviews = activePanel === '전체' ? [] : cinemaReviews.filter(r => r.panelName === activePanel).sort((a,b) => b.rating - a.rating);
 
   return (
@@ -1083,12 +1139,12 @@ const CinemaHellSection = ({ isAdmin, onMovieClick }) => {
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-3xl font-extrabold text-white">🎬 매불쇼 <span className="text-red-500">시네마지옥</span></h2>
         {isAdmin && (
-          <button onClick={() => setIsAdminModalOpen(true)} className="bg-red-600 hover:bg-red-700 text-white text-sm font-bold px-4 py-2 rounded-md shadow-lg transition-colors">✏️ 방송 기록 등록</button>
+          <button onClick={openNewModal} className="bg-red-600 hover:bg-red-700 text-white text-sm font-bold px-4 py-2 rounded-md shadow-lg transition-colors">✏️ 방송 기록 등록</button>
         )}
       </div>
 
       <div className="flex flex-wrap gap-2 mb-8">
-        {CINEMA_HELL_PANELS.map(panel => (
+        {visiblePanels.map(panel => (
           <button key={panel} onClick={() => setActivePanel(panel)} className={`px-6 py-2 rounded-full font-bold transition-all ${activePanel === panel ? 'bg-red-600 text-white shadow-lg scale-105' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>{panel}</button>
         ))}
       </div>
@@ -1100,21 +1156,29 @@ const CinemaHellSection = ({ isAdmin, onMovieClick }) => {
           <div className="flex flex-col gap-8">
             {Object.keys(groupedByDate).sort((a,b) => b.localeCompare(a)).map(date => (
               <div key={date} className="animate-fadeIn">
-                <h3 className="text-xl font-bold text-white mb-4 border-b border-gray-700 pb-2">{date} 방송</h3>
-                <div className="flex overflow-x-auto gap-4 pb-4 snap-x">
+                
+                <div className="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                   <h3 className="text-xl font-bold text-white">{date} 방송</h3>
+                   {/* 🚨 날짜별 수정 버튼 */}
+                   {isAdmin && (
+                     <button onClick={() => openEditModal(groupedByDate[date])} className="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded font-bold transition-colors">기록 수정</button>
+                   )}
+                </div>
+
+                {/* 🚨 가로 슬라이드(snap-x) 제거 및 그리드 3단(grid-cols-3) 적용 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {groupedByDate[date].map((review, index) => (
-                    <div key={`${review.id}-${index}`} onClick={() => onMovieClick(review)} className="bg-gray-900 p-4 rounded-lg flex flex-col gap-3 border border-gray-700 relative shrink-0 w-64 snap-start hover:border-gray-500 cursor-pointer transition-colors group mt-4">
-                      {/* 🚨 누가 평가했는지 배지로 확실히 표시 */}
-                      <div className="absolute -top-3 -left-3 bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md z-10">{review.reviewerName}</div>
-                      <div className="flex gap-4">
-                        <img src={review.poster} alt="" className="w-16 h-24 object-cover rounded shadow-md group-hover:opacity-80 transition-opacity" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(review.title)}`; }} />
-                        <div className="flex flex-col justify-center">
-                          <h4 className="text-md font-bold text-white leading-tight mb-1">{review.title}</h4>
-                          <div className="text-yellow-400 text-sm font-bold mb-1">★ {Number(review.rating).toFixed(1)}</div>
-                          {review.isRecommend ? <span className="text-green-400 text-[10px] border border-green-500 px-2 py-0.5 rounded w-max">👍 추천</span> : <span className="text-red-400 text-[10px] border border-red-500 px-2 py-0.5 rounded w-max">👎 비추천</span>}
+                    <div key={`${review.dbId}-${index}`} onClick={() => onMovieClick(review)} className="bg-gray-900 p-4 rounded-lg flex gap-4 border border-gray-700 hover:border-gray-500 cursor-pointer transition-colors group relative">
+                      <div className="absolute -top-3 -left-3 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md z-10">{review.reviewerName}</div>
+                      <img src={review.poster} alt="" className="w-16 h-24 object-cover rounded shadow-md shrink-0 group-hover:opacity-80 transition-opacity" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(review.title)}`; }} />
+                      <div className="flex flex-col justify-center w-full overflow-hidden">
+                        <div className="flex justify-between items-start mb-1">
+                          <h4 className="text-md font-bold text-white leading-tight truncate pr-2">{review.title}</h4>
+                          {review.isRecommend ? <span className="text-green-400 text-[10px] border border-green-500 px-1 rounded shrink-0">추천</span> : <span className="text-red-400 text-[10px] border border-red-500 px-1 rounded shrink-0">비추천</span>}
                         </div>
+                        <div className="text-yellow-400 text-sm font-bold mb-1">★ {Number(review.rating).toFixed(1)}</div>
+                        <p className="text-gray-300 text-xs truncate">"{review.comment}"</p>
                       </div>
-                      <p className="text-gray-300 text-sm text-center bg-gray-800 p-2 rounded truncate">"{review.comment}"</p>
                     </div>
                   ))}
                 </div>
@@ -1124,13 +1188,10 @@ const CinemaHellSection = ({ isAdmin, onMovieClick }) => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
             {filteredReviews.map((review, index) => (
-              <div key={`${review.id}-${index}`} onClick={() => onMovieClick(review)} className="bg-gray-900 p-4 rounded-lg flex gap-4 border border-gray-700 hover:border-gray-500 cursor-pointer transition-colors group relative">
-                {/* 🚨 패널 안에서도 특정 인물의 이름을 빨간 배지로 명확히 표시 */}
-                <div className="absolute -top-3 -left-3 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md z-10">
-                  {review.reviewerName}
-                </div>
+              <div key={`${review.dbId}-${index}`} onClick={() => onMovieClick(review)} className="bg-gray-900 p-4 rounded-lg flex gap-4 border border-gray-700 hover:border-gray-500 cursor-pointer transition-colors group relative">
+                <div className="absolute -top-3 -left-3 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md z-10">{review.reviewerName}</div>
                 <img src={review.poster} alt="" className="w-16 h-24 object-cover rounded shadow-md shrink-0 group-hover:opacity-80 transition-opacity" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(review.title)}`; }} />
-                <div className="flex flex-col justify-center w-full">
+                <div className="flex flex-col justify-center w-full overflow-hidden">
                   <div className="flex justify-between items-start mb-1">
                     <h4 className="text-md font-bold text-white leading-tight truncate pr-2">{review.title}</h4>
                     {review.isRecommend ? <span className="text-green-400 text-[10px] border border-green-500 px-1 rounded shrink-0">추천</span> : <span className="text-red-400 text-[10px] border border-red-500 px-1 rounded shrink-0">비추천</span>}
@@ -1144,7 +1205,7 @@ const CinemaHellSection = ({ isAdmin, onMovieClick }) => {
           </div>
         )}
       </div>
-      <AdminCinemaModal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} onAddCinemaReview={handleAddCinemaReview} />
+      <AdminCinemaModal isOpen={isAdminModalOpen} onClose={() => setIsAdminModalOpen(false)} onRefresh={fetchCinemaReviews} editData={editData} />
     </section>
   );
 };
@@ -1171,7 +1232,7 @@ function MainApp() {
   const [showNicknameModal, setShowNicknameModal] = useState(false);
   
   const [selectedMovieForReview, setSelectedMovieForReview] = useState(null);
-  const [editingReview, setEditingReview] = useState(null); // 🚨 수정 모드를 위한 상태 추가
+  const [editingReview, setEditingReview] = useState(null); 
   
   const [dbUser, setDbUser] = useState(null); 
   const [myRatings, setMyRatings] = useState([]); 
@@ -1388,7 +1449,8 @@ function MainApp() {
                   onEditRating={(item) => { setEditingReview(item); setIsReviewModalOpen(true); }} 
                 />
               ))}
-              {currentMenu === 'cinema' && <CinemaHellSection isAdmin={isAdmin} onMovieClick={handleMovieClick} />}
+              {/* 🚨 시네마지옥 섹션에 onRefreshGlobal 전달 */}
+              {currentMenu === 'cinema' && <CinemaHellSection isAdmin={isAdmin} onMovieClick={handleMovieClick} onRefreshGlobal={fetchAllMovieData} />}
             </>
           } />
           
@@ -1401,7 +1463,6 @@ function MainApp() {
       <NicknameModal isOpen={showNicknameModal} onSubmit={handleNicknameSubmit} onCancel={handleNicknameCancel} />
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
       
-      {/* 🚨 수정 기능을 처리하도록 모달 전달 속성 추가 */}
       <ReviewModal 
         isOpen={isReviewModalOpen} 
         onClose={() => {setIsReviewModalOpen(false); setSelectedMovieForReview(null); setEditingReview(null);}} 
