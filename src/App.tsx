@@ -97,7 +97,6 @@ const Top10Section = ({ title, movies, isWorst = false, onMovieClick }) => {
       {movies.length === 0 ? (
         <div className="h-48 flex items-center justify-center text-gray-500 border border-gray-800 rounded-lg">영화 데이터를 불러오는 중입니다...</div>
       ) : (
-        {/* 🚨 한 줄에 5개 고정: lg:grid-cols-5 */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
           {sortedMovies.slice(0, 10).map((movie, index) => (
             <MovieCard key={`${movie.id}-${index}`} movie={movie} isWorst={isWorst} onMovieClick={onMovieClick} />
