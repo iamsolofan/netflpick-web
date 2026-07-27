@@ -105,7 +105,7 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
 
   useEffect(() => {
     if (!movie) { navigate('/'); return; }
-   
+    document.title = `${movie.title} 평점 및 한줄평 모음 - 넷플픽`;
     if (movie.id) {
       fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=ko-KR&append_to_response=credits`)
         .then(res => res.json())
