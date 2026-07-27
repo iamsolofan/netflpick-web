@@ -103,8 +103,22 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
   const [tmdbInfo, setTmdbInfo] = useState(null); 
   const [actualReviews, setActualReviews] = useState([]);
 
-// 영화 리뷰 목록 중에 '시네마지옥(isCinema)' 출신 리뷰가 하나라도 있는지 자동으로 검사!
-const isMaebulPick = actualReviews.some(review => review.isCinema === true);
+// 시네마지옥 리뷰만 따로 모아보기
+const cinemaReviews = actualReviews.filter(review => review.isCinema === true);
+
+// 추천/비추천 상태 확인하기 (true/false)
+const hasRecommend = cinemaReviews.some(review => review.isRecommend === true);
+const hasNotRecommend = cinemaReviews.some(review => review.isRecommend === false);
+
+// 뱃지 상태 결정하기
+let maebulStatus = 'none'; 
+if (hasRecommend && hasNotRecommend) {
+  maebulStatus = 'mixed'; // 추천과 비추천이 섞여 있으면 '호불호'
+} else if (hasRecommend) {
+  maebulStatus = 'recommend'; // 추천만 있으면 '강력 추천'
+} else if (hasNotRecommend) {
+  maebulStatus = 'not_recommend'; // 비추천만 있으면 '비추천'
+}
 
   useEffect(() => {
     if (!movie) { navigate('/'); return; }
@@ -150,13 +164,14 @@ const isMaebulPick = actualReviews.some(review => review.isCinema === true);
     <div className="max-w-2xl mx-auto animate-fadeIn mt-4">
 
 <Helmet>
-  <title>{movie.title} 평점 후기 리뷰 모음 - 넷플픽</title>
+  <title>{movie.title} 후기와 평점 리뷰 모음 - 넷플픽</title>
   <meta 
     name="description" 
     content={
-      isMaebulPick 
-        ? `🔥 매불쇼 시네마지옥 강력 추천작! '${movie.title}'의 후기와 평점을 넷플픽에서 확인하세요.`
-        : `'${movie.title}'의 평점과 리뷰를 확인하세요.`
+      maebulStatus === 'recommend' ? `🔥 매불쇼 강력 추천! '${movie.title}'의 후기와 평점을 확인하세요.` :
+      maebulStatus === 'not_recommend' ? `💣 매불쇼 비추천! '${movie.title}'의 진짜 평가를 확인하세요.` :
+      maebulStatus === 'mixed' ? `🤔 매불쇼 패널들의 의견이 격렬하게 갈린 문제작! '${movie.title}'의 호불호 평가를 확인하세요.` :
+      `'${movie.title}'의 평점과 후기, 리뷰, 한줄평을 확인하세요.`
     } 
   />
 </Helmet>
@@ -166,11 +181,9 @@ const isMaebulPick = actualReviews.some(review => review.isCinema === true);
         <div className="flex flex-col justify-center flex-1 text-center sm:text-left">
         <h2 className="text-xl md:text-2xl font-extrabold text-white mb-2 flex items-center">
   {movie.title}
-  {isMaebulPick && (
-    <span className="ml-3 text-sm font-normal bg-red-600 text-white px-3 py-1 rounded-full">
-      🔥 매불쇼 추천
-    </span>
-  )}
+  {maebulStatus === 'recommend' && <span className="ml-3 text-sm font-normal bg-green-600 text-white px-3 py-1 rounded-full">🔥 매불쇼 추천</span>}
+  {maebulStatus === 'not_recommend' && <span className="ml-3 text-sm font-normal bg-red-600 text-white px-3 py-1 rounded-full">💣 매불쇼 비추천</span>}
+  {maebulStatus === 'mixed' && <span className="ml-3 text-sm font-normal bg-yellow-500 text-black px-3 py-1 rounded-full">🤔 매불쇼 호불호</span>}
 </h2>
           <div className="text-yellow-400 font-extrabold text-xl mb-3">★ {Number(movie.rating).toFixed(1)} <span className="text-gray-500 text-sm font-normal">/ 10</span></div>
           
