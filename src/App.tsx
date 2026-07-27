@@ -617,6 +617,12 @@ const BoardDetailPage = ({ user, onLoginRequired }) => {
 
   return (
     <div className="max-w-4xl mx-auto animate-fadeIn mt-4">
+
+      <Helmet>
+        <title>{post.title} - 넷플픽 자유게시판</title>
+        <meta name="description" content={post.content.substring(0, 80) + '...'} />
+      </Helmet> 
+
       <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-white mb-6 flex items-center gap-2">
         ◀ 목록으로 돌아가기
       </button>
