@@ -1196,7 +1196,62 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
     </div>
   );
 };
+const AdminUserSection = () => {
+  const [users, setUsers] = useState([]);
 
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!db) return;
+      try {
+        const snap = await getDocs(collection(db, "users"));
+        const fetched = [];
+        snap.forEach(doc => fetched.push(doc.data()));
+        // 가입일(createdAt) 기준으로 최신 가입자가 위로 오도록 정렬 (과거 가입자는 날짜가 없으므로 아래로)
+        fetched.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        setUsers(fetched);
+      } catch(e) { console.error(e); }
+    };
+    fetchUsers();
+  }, []);
+
+  return (
+    <section className="animate-fadeIn">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-3xl font-extrabold text-white">👑 운영자 전용 <span className="text-red-500">회원 관리</span></h2>
+        <span className="bg-gray-800 border border-gray-700 text-gray-300 px-4 py-2 rounded-lg font-bold">
+          총 가입자: {users.length}명
+        </span>
+      </div>
+
+      <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden shadow-xl">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-gray-300">
+            <thead className="bg-gray-900 text-gray-400 font-bold border-b border-gray-700">
+              <tr>
+                <th className="p-4">No.</th>
+                <th className="p-4">닉네임</th>
+                <th className="p-4">이메일</th>
+                <th className="p-4">가입일</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u, idx) => (
+                <tr key={u.uid} className="border-b border-gray-800 hover:bg-gray-700 transition-colors">
+                  <td className="p-4 font-bold text-gray-500">{users.length - idx}</td>
+                  <td className="p-4 font-bold text-white">{u.nickname} {u.nickname === '넷플픽' && '👑'}</td>
+                  <td className="p-4 text-gray-400">{u.email}</td>
+                  <td className="p-4 text-gray-500">
+                    {u.createdAt ? new Date(u.createdAt).toLocaleString('ko-KR') : '날짜 기록 없음(초기 멤버)'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+};
 const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
   const [activePanel, setActivePanel] = useState('전체');
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
@@ -1485,8 +1540,7 @@ function MainApp() {
        const snap = await getDocs(q);
        if (!snap.empty) return alert("이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.");
 
-       const newUser = { uid: auth.currentUser.uid, nickname: trimmed, email: auth.currentUser.email };
-       await setDoc(doc(db, "users", auth.currentUser.uid), newUser);
+       const newUser = { uid: auth.currentUser.uid, nickname: trimmed, email: auth.currentUser.email, createdAt: new Date().toISOString() };       await setDoc(doc(db, "users", auth.currentUser.uid), newUser);
        setDbUser(newUser);
        setShowNicknameModal(false);
        fetchMyRatingsFromDB(auth.currentUser.uid);
@@ -1569,6 +1623,11 @@ function MainApp() {
             <button onClick={() => navigate('/board/general')} className={`transition-colors ${location.pathname === '/board/general' ? 'text-yellow-400 font-bold border-b-2 border-yellow-400 pb-1' : 'text-gray-400 hover:text-yellow-300'}`}>전체 게시판</button>
             <button onClick={() => navigate('/board/qna')} className={`transition-colors ${location.pathname === '/board/qna' ? 'text-blue-400 font-bold border-b-2 border-blue-400 pb-1' : 'text-gray-400 hover:text-blue-300'}`}>질문/답변</button>
             <button onClick={() => handleMenuClick('myRatings')} className={`transition-colors ${currentMenu === 'myRatings' && location.pathname === '/' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>나의 평점</button>
+
+{/* 🔥 운영자일 때만 '회원 관리' 메뉴가 보입니다 */}
+{isAdmin && (
+  <button onClick={() => handleMenuClick('adminUsers')} className={`transition-colors ${currentMenu === 'adminUsers' && location.pathname === '/' ? 'text-red-400 font-bold border-b-2 border-red-400 pb-1' : 'text-gray-400 hover:text-red-300'}`}>👑 회원 관리</button>
+)}
           </nav>
         </div>
       </header>
@@ -1597,6 +1656,7 @@ function MainApp() {
                 />
               ))}
               {currentMenu === 'cinema' && <CinemaHellSection isAdmin={isAdmin} onMovieClick={handleMovieClick} onRefreshGlobal={fetchAllMovieData} />}
+              {currentMenu === 'adminUsers' && isAdmin && <AdminUserSection />}
             </>
           } />
           
