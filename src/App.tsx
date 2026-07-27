@@ -1290,7 +1290,7 @@ const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
 
                         </div>
                         <div className="text-yellow-400 text-sm font-bold mb-1">★ {Number(review.rating).toFixed(1)}</div>
-                        <p className="text-gray-300 text-xs truncate">"{review.comment}"</p>
+                        <p className="text-gray-300 text-xs">"{review.comment}"</p>
                       </div>
                     </div>
                   ))}
