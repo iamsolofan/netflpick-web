@@ -186,11 +186,9 @@ if (cinemaReviews.length > 0) {
         <div className="flex flex-col justify-center flex-1 text-center sm:text-left">
         <h2 className="text-xl md:text-2xl font-extrabold text-white mb-2 flex items-center">
   {movie.title}
-  {isMaebulPick && (
-    <span className="ml-3 text-sm font-normal bg-red-600 text-white px-3 py-1 rounded-full">
-      🔥 매불쇼 추천
-    </span>
-  )}
+  {maebulStatus === 'recommend' && <span className="ml-3 text-sm font-normal bg-green-600 text-white px-3 py-1 rounded-full">🔥 매불쇼 추천</span>}
+  {maebulStatus === 'not_recommend' && <span className="ml-3 text-sm font-normal bg-red-600 text-white px-3 py-1 rounded-full">💣 매불쇼 비추천</span>}
+  {maebulStatus === 'mixed' && <span className="ml-3 text-sm font-normal bg-yellow-500 text-black px-3 py-1 rounded-full">🤔 매불쇼 호불호</span>}
 </h2>
           <div className="text-yellow-400 font-extrabold text-xl mb-3">★ {Number(movie.rating).toFixed(1)} <span className="text-gray-500 text-sm font-normal">/ 10</span></div>
           
