@@ -103,9 +103,8 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
   const [tmdbInfo, setTmdbInfo] = useState(null); 
   const [actualReviews, setActualReviews] = useState([]);
 
-// 매불쇼 시네마지옥 추천작 ID 명단 (햄넷 858024 등)
-const maebulPickIds = [858024, 1317512]; 
-const isMaebulPick = movie ? maebulPickIds.includes(movie.id) : false;
+// 영화 리뷰 목록 중에 '시네마지옥(isCinema)' 출신 리뷰가 하나라도 있는지 자동으로 검사!
+const isMaebulPick = actualReviews.some(review => review.isCinema === true);
 
   useEffect(() => {
     if (!movie) { navigate('/'); return; }
