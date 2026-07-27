@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, Link } from 'react-router-dom';
+import { Helmet, HelmetProvider } from 'react-helmet-async';
 
 // ==========================================
 // 1. Firebase 및 초기화 세팅
@@ -104,8 +105,7 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
 
   useEffect(() => {
     if (!movie) { navigate('/'); return; }
-    document.title = `${movie.title} 평점 및 한줄평 모음 - 넷플픽`;
-    
+   
     if (movie.id) {
       fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=ko-KR&append_to_response=credits`)
         .then(res => res.json())
@@ -145,6 +145,11 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
 
   return (
     <div className="max-w-2xl mx-auto animate-fadeIn mt-4">
+<Helmet>
+  <title>{movie.title} 평점 및 한줄평 모음 - 넷플픽</title>
+  <meta name="description" content={`${movie.title}의 매불쇼 시네마지옥 평점, 출연진 정보 및 유저 솔직 한줄평 모음`} />
+</Helmet>
+
       <div className="flex flex-col sm:flex-row gap-5 mb-8 bg-gray-800 p-4 md:p-6 rounded-2xl border border-gray-700 shadow-xl">
         <img src={movie.poster} alt={movie.title} className="w-32 md:w-40 h-auto object-cover rounded-xl shadow-lg shrink-0 mx-auto sm:mx-0" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(movie.title)}`; }} />
         <div className="flex flex-col justify-center flex-1 text-center sm:text-left">
@@ -1311,9 +1316,11 @@ const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
 // ==========================================
 export default function App() {
   return (
-    <Router>
-      <MainApp />
-    </Router>
+    <HelmetProvider>
+      <Router>
+        <MainApp />
+      </Router>
+    </HelmetProvider>
   );
 }
 
