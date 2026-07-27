@@ -169,14 +169,14 @@ if (cinemaReviews.length > 0) {
     <div className="max-w-2xl mx-auto animate-fadeIn mt-4">
 
 <Helmet>
-  <title>{movie.title} 후기와 평점 리뷰 모음 - 넷플픽</title>
+  <title>{movie.title} 평점 및 한줄평 모음 - 넷플픽</title>
   <meta 
     name="description" 
     content={
-      maebulStatus === 'recommend' ? `🔥 매불쇼 강력 추천! '${movie.title}'의 후기와 평점을 확인하세요.` :
+      maebulStatus === 'recommend' ? `🔥 매불쇼 강력 추천! '${movie.title}'의 줄거리와 평점을 확인하세요.` :
       maebulStatus === 'not_recommend' ? `💣 매불쇼 비추천! '${movie.title}'의 진짜 평가를 확인하세요.` :
       maebulStatus === 'mixed' ? `🤔 매불쇼 패널들의 의견이 격렬하게 갈린 문제작! '${movie.title}'의 호불호 평가를 확인하세요.` :
-      `'${movie.title}'의 평점과 후기,한줄평을 확인하세요.`
+      `'${movie.title}'의 평점과 한줄평을 확인하세요.`
     } 
   />
 </Helmet>
