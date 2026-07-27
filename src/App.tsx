@@ -103,6 +103,10 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
   const [tmdbInfo, setTmdbInfo] = useState(null); 
   const [actualReviews, setActualReviews] = useState([]);
 
+// 매불쇼 시네마지옥 추천작 ID 명단 (햄넷 858024 등)
+const maebulPickIds = [858024, 1317512]; 
+const isMaebulPick = movie ? maebulPickIds.includes(movie.id) : false;
+
   useEffect(() => {
     if (!movie) { navigate('/'); return; }
     document.title = `${movie.title} 평점 및 한줄평 모음 - 넷플픽`;
@@ -145,15 +149,30 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
 
   return (
     <div className="max-w-2xl mx-auto animate-fadeIn mt-4">
+
 <Helmet>
-  <title>{movie.title} 평점 및 한줄평 모음 - 넷플픽</title>
-  <meta name="description" content={`${movie.title}의 매불쇼 시네마지옥 평점, 출연진 정보 및 유저 솔직 한줄평 모음`} />
+  <title>{movie.title} 평점 후기 리뷰 모음 - 넷플픽</title>
+  <meta 
+    name="description" 
+    content={
+      isMaebulPick 
+        ? `🔥 매불쇼 시네마지옥 강력 추천작! '${movie.title}'의 후기와 평점을 넷플픽에서 확인하세요.`
+        : `'${movie.title}'의 평점과 리뷰를 확인하세요.`
+    } 
+  />
 </Helmet>
 
       <div className="flex flex-col sm:flex-row gap-5 mb-8 bg-gray-800 p-4 md:p-6 rounded-2xl border border-gray-700 shadow-xl">
         <img src={movie.poster} alt={movie.title} className="w-32 md:w-40 h-auto object-cover rounded-xl shadow-lg shrink-0 mx-auto sm:mx-0" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(movie.title)}`; }} />
         <div className="flex flex-col justify-center flex-1 text-center sm:text-left">
-          <h2 className="text-xl md:text-2xl font-extrabold text-white mb-2">{movie.title}</h2>
+        <h2 className="text-xl md:text-2xl font-extrabold text-white mb-2 flex items-center">
+  {movie.title}
+  {isMaebulPick && (
+    <span className="ml-3 text-sm font-normal bg-red-600 text-white px-3 py-1 rounded-full">
+      🔥 매불쇼 추천
+    </span>
+  )}
+</h2>
           <div className="text-yellow-400 font-extrabold text-xl mb-3">★ {Number(movie.rating).toFixed(1)} <span className="text-gray-500 text-sm font-normal">/ 10</span></div>
           
           <div className="flex justify-center sm:justify-start gap-2 text-xs font-bold mb-4">
