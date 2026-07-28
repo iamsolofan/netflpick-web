@@ -1089,16 +1089,7 @@ const AdminCinemaInputRow = ({ label, value, onChange, isNewRelease, isOther }) 
          </div>
          {isOther && (
             <div className="mb-2 flex gap-2">
-               <select value={value.otherName} onChange={e => onChange({...value, otherName: e.target.value})} className="p-2 bg-gray-900 text-white border border-gray-700 rounded text-sm outline-none">
-                  <option value="배순탁">배순탁</option>
-                  <option value="주성철">주성철</option>
-                  <option value="송경원">송경원</option>
-                  <option value="달시파켓">달시파켓</option>
-                  <option value="직접입력">직접 입력</option>
-               </select>
-               {value.otherName === '직접입력' && (
-                 <input type="text" placeholder="이름 직접 입력" value={value.customName} onChange={e => onChange({...value, customName: e.target.value})} className="p-2 bg-gray-900 border border-gray-700 rounded text-sm text-white flex-1 outline-none focus:border-red-500" />
-               )}
+              <input type="text" placeholder="게스트 이름 직접 입력" value={value.customName} onChange={e => onChange({...value, customName: e.target.value})} className="p-2 bg-gray-900 border border-gray-700 rounded text-sm text-white flex-1 outline-none focus:border-red-500" />
             </div>
          )}
          <div className="flex gap-3 items-center mb-3 bg-gray-900 p-2 rounded">
@@ -1165,40 +1156,49 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
   
   const initialFormState = { title: '', isRecommend: true, comment: '', docId: null, movieId: null, poster: '' };
   
-  const [newRelease, setNewRelease] = useState({ ...initialFormState });
+  const initialNewReleaseState = { 
+    ...initialFormState,
+    opinions: [
+      { critic: '라이너', isRecommend: true, active: false },
+      { critic: '거의없다', isRecommend: true, active: false },
+      { critic: '전찬일', isRecommend: true, active: false },
+      { critic: '기타', customName: '', isRecommend: true, active: false }
+    ]
+  };
+
+  const [newRelease, setNewRelease] = useState({ ...initialNewReleaseState });
   const [jeon, setJeon] = useState({ ...initialFormState });
   const [liner, setLiner] = useState({ ...initialFormState });
   const [none, setNone] = useState({ ...initialFormState });
   const [choiG, setChoiG] = useState({ ...initialFormState });
   const [choiW, setChoiW] = useState({ ...initialFormState });
-  const [other, setOther] = useState({ ...initialFormState, otherName: '배순탁', customName: '' });
+  
+  // 🔥 기본값을 아예 '직접입력'으로 고정해버립니다.
+  const [other, setOther] = useState({ ...initialFormState, otherName: '직접입력', customName: '' });
 
   useEffect(() => {
     if (isOpen) {
       if (editData && editData.length > 0) {
         setDate(editData[0].broadcastDate);
-        let nR = { ...initialFormState }, j = { ...initialFormState }, l = { ...initialFormState }, n = { ...initialFormState }, cG = { ...initialFormState }, cW = { ...initialFormState }, o = { ...initialFormState, otherName: '배순탁', customName: '' };
+        let nR = { ...initialNewReleaseState }, j = { ...initialFormState }, l = { ...initialFormState }, n = { ...initialFormState }, cG = { ...initialFormState }, cW = { ...initialFormState }, o = { ...initialFormState, otherName: '직접입력', customName: '' };
         
         editData.forEach(r => {
           const mappedData = { title: r.title, poster: r.poster, isRecommend: r.isRecommend, comment: r.comment, movieId: r.id, docId: r.dbId };
-          if (r.panelName === '신작') nR = mappedData;
+          if (r.panelName === '신작') nR = { ...mappedData, opinions: r.opinions || initialNewReleaseState.opinions };
           else if (r.panelName === '전찬일') j = mappedData;
           else if (r.panelName === '라이너') l = mappedData;
           else if (r.panelName === '거의없다') n = mappedData;
           else if (r.panelName === '최광희') cG = mappedData;
           else if (r.panelName === '최욱') cW = mappedData;
           else if (r.panelName === '기타') {
+            // 🔥 쓸데없는 이름 검사 로직 싹 지우고 바로 무조건 직접입력으로 받습니다.
             o = { ...mappedData, otherName: '직접입력', customName: r.reviewerName };
-            if (['배순탁', '주성철', '송경원', '달시파켓'].includes(r.reviewerName)) {
-              o.otherName = r.reviewerName;
-              o.customName = '';
-            }
           }
         });
         setNewRelease(nR); setJeon(j); setLiner(l); setNone(n); setChoiG(cG); setChoiW(cW); setOther(o);
       } else {
         setDate(getRecentFridayKST());
-        setNewRelease({ ...initialFormState }); setJeon({ ...initialFormState }); setLiner({ ...initialFormState }); setNone({ ...initialFormState }); setChoiG({ ...initialFormState }); setChoiW({ ...initialFormState }); setOther({ ...initialFormState, otherName: '배순탁', customName: '' });
+        setNewRelease({ ...initialNewReleaseState }); setJeon({ ...initialFormState }); setLiner({ ...initialFormState }); setNone({ ...initialFormState }); setChoiG({ ...initialFormState }); setChoiW({ ...initialFormState }); setOther({ ...initialFormState, otherName: '직접입력', customName: '' });
       }
     }
   }, [isOpen, editData]);
@@ -1221,8 +1221,9 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
             const reviewObj = {
               id: entry.data.movieId || Date.now() + Math.random(),
               title: entry.data.title, poster: entry.data.poster,
-              rating: entry.panel === '신작' ? (entry.data.isRecommend === 'both' ? 6.0 : (entry.data.isRecommend ? 8.0 : 4.0)) : 8.0, 
-              isRecommend: entry.panel === '신작' ? entry.data.isRecommend : true,
+              rating: entry.panel === '신작' ? 8.0 : 8.0, 
+              isRecommend: entry.panel === '신작' ? true : entry.data.isRecommend,
+              opinions: entry.panel === '신작' ? entry.data.opinions : null, // 🔥 추가된 부분
               comment: entry.data.comment || '한줄평 없음',
               panelName: entry.panel, reviewerName: finalPanelName, broadcastDate: date
             };
@@ -1258,7 +1259,7 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
         <div className="overflow-y-auto flex-1 pr-2 custom-scrollbar">
           <label className="block text-sm text-gray-400 mb-1">방송 날짜 (KST 기준 자동 세팅)</label>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full p-3 bg-gray-800 rounded-lg mb-6 border border-gray-700 outline-none text-white focus:border-red-500" />
-          <AdminCinemaInputRow label="[신작]" value={newRelease} onChange={setNewRelease} isNewRelease={true} />
+          <AdminNewReleaseRow label="[신작 소개작]" value={newRelease} onChange={setNewRelease} />
           <AdminCinemaInputRow label="[전찬일]" value={jeon} onChange={setJeon} />
           <AdminCinemaInputRow label="[라이너]" value={liner} onChange={setLiner} />
           <AdminCinemaInputRow label="[거의없다]" value={none} onChange={setNone} />
