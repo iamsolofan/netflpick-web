@@ -1668,11 +1668,25 @@ function MainApp() {
             <>
               {currentMenu === 'home' && (
                 <>
-                  <Top10Section title="🔥 유저들이 선택한 최신 추천작" movies={latestMovies} onMovieClick={handleMovieClick} />
+                 {/* 🔥 2단계 수정: 현재 월 자동 출력 및 제목 수정 */}
+                 <Top10Section 
+                    title={`🔥 유저들이 선택한 ${new Date().getMonth() + 1}월 추천작`} 
+                    movies={latestMovies} 
+                    onMovieClick={handleMovieClick} 
+                  />
                   <div className="h-px bg-gray-800 my-8"></div>
-                  <Top10Section title="👑 넷플픽 명작 베스트" movies={bestMovies} onMovieClick={handleMovieClick} />
+                  <Top10Section 
+                    title="👑 넷플픽 유저들이 꼽은 명작 베스트" 
+                    movies={bestMovies} 
+                    onMovieClick={handleMovieClick} 
+                  />
                   <div className="h-px bg-gray-800 my-8"></div>
-                  <Top10Section title="☠️ 넷플픽 최악 워스트" movies={worstMovies} isWorst={true} onMovieClick={handleMovieClick} />
+                  <Top10Section 
+                    title="☠️ 넷플픽 유저가 뽑은 비추천 영화" 
+                    movies={worstMovies} 
+                    isWorst={true} 
+                    onMovieClick={handleMovieClick} 
+                  />
                 </>
               )}
               {currentMenu === 'latest' && <LatestReviewsSection latestReviews={globalLatestReviews} onMovieClick={handleMovieClick} />}
