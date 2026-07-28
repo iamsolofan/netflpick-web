@@ -1458,29 +1458,30 @@ const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
             {filteredReviews.map((review, index) => (
               <div key={`${review.dbId}-${index}`} onClick={() => onMovieClick(review)} className="bg-gray-900 p-4 rounded-lg flex gap-4 border border-gray-700 hover:border-gray-500 cursor-pointer transition-colors group relative">
-                <div className="absolute -top-3 -left-3 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md z-10">{review.reviewerName}</div>
-                <img src={review.poster} alt="" className="w-16 h-24 object-cover rounded shadow-md shrink-0 group-hover:opacity-80 transition-opacity" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(review.title)}`; }} />
-                <div className="flex flex-col justify-center w-full overflow-hidden">
-                  <div className="flex justify-between items-start mb-1">
-                    <h4 className="text-md font-bold text-white leading-tight truncate pr-2">{review.title}</h4>
-                    
-                    {/* 🚨 양방향 추천 표시 */}
-                    {review.isRecommend === 'both' ? (
-                      <div className="flex gap-1 shrink-0">
-                        <span className="text-green-400 text-[10px] border border-green-500 px-1 rounded">추천</span>
-                        <span className="text-red-400 text-[10px] border border-red-500 px-1 rounded">비추천</span>
-                      </div>
-                    ) : review.isRecommend ? (
-                      <span className="text-green-400 text-[10px] border border-green-500 px-1 rounded shrink-0">추천</span>
-                    ) : (
-                      <span className="text-red-400 text-[10px] border border-red-500 px-1 rounded shrink-0">비추천</span>
-                    )}
-
-                  </div>
-                  <div className="text-yellow-400 text-sm font-bold mb-1">★ {Number(review.rating).toFixed(1)}</div>
-                  <span className="text-gray-500 text-[10px] mb-1">{review.broadcastDate}</span>
-                  <p className="text-gray-300 text-xs truncate">"{review.comment}"</p>
+                <div className={`absolute -top-3 -left-3 text-white text-[12px] sm:text-sm font-extrabold px-3 py-1 rounded-full shadow-md z-10 ${review.panelName === '신작' ? 'bg-blue-600 border border-blue-500' : (review.isRecommend === 'both' ? 'bg-yellow-500 text-black border border-yellow-400' : (review.isRecommend ? 'bg-green-600 border border-green-500' : 'bg-red-600 border border-red-500'))}`}>
+                {review.panelName === '신작' ? '🎬 신작 소개작' : `${review.reviewerName} ${review.isRecommend === 'both' ? '🤔호불호' : (review.isRecommend ? '👍추천' : '👎비추천')}`}
+              </div>
+              <img src={review.poster} onClick={() => onMovieClick(review)} alt="" className="w-16 h-24 object-cover rounded shadow-md bg-gray-700 cursor-pointer hover:opacity-80 transition-opacity shrink-0" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(review.title)}`; }} />
+              <div className="flex flex-col justify-center w-full overflow-hidden flex-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                  <h3 className="text-lg font-bold text-white cursor-pointer hover:text-red-400 transition-colors truncate" onClick={() => onMovieClick(review)}>{review.title}</h3>
                 </div>
+
+                {/* 🔥 신작 패널별 의견 쫙 뿌려주는 영역 */}
+                {review.panelName === '신작' && review.opinions && (
+                  <div className="flex flex-wrap gap-1 mb-1.5 mt-0.5">
+                    {review.opinions.filter(op => op.active).map((op, i) => (
+                      <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded font-extrabold border ${op.isRecommend ? 'bg-green-900/40 text-green-400 border-green-700' : 'bg-red-900/40 text-red-400 border-red-700'}`}>
+                        {op.critic === '기타' ? op.customName : op.critic} {op.isRecommend ? '👍' : '👎'}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div className="text-yellow-400 text-sm font-bold mb-1">★ {Number(review.rating).toFixed(1)}</div>
+                {review.panelName !== '신작' && <span className="text-gray-500 text-[10px] mb-1">{review.broadcastDate || (review.date ? new Date(review.date).toLocaleDateString('ko-KR') : '')}</span>}
+                <p className="text-gray-300 text-xs truncate">"{review.comment}"</p>
+              </div>
               </div>
             ))}
           </div>
