@@ -1516,7 +1516,35 @@ function MainApp() {
         rating: (m.totalRating / m.count).toFixed(1)
       }));
 
-      setLatestMovies([...allMovies].sort((a,b) => new Date(b.latestDate) - new Date(a.latestDate)));
+      // ==========================================
+      // 🔥 1단계 수정: 월별 추천작 자동 교체 로직
+      // ==========================================
+      const now = new Date();
+      const curYear = now.getFullYear();
+      const curMonth = now.getMonth();
+
+      const currentMonthMovies = [];
+      const previousMovies = [];
+
+      allMovies.forEach(m => {
+        if (m.recommends > 0) { 
+          const mDate = new Date(m.latestDate);
+          if (mDate.getFullYear() === curYear && mDate.getMonth() === curMonth) {
+            currentMonthMovies.push(m);
+          } else {
+            previousMovies.push(m);
+          }
+        }
+      });
+
+      previousMovies.sort((a, b) => b.rating - a.rating);
+
+      const displayLatest = [
+        ...currentMonthMovies,
+        ...previousMovies.slice(0, Math.max(0, 10 - currentMonthMovies.length))
+      ];
+
+      setLatestMovies(displayLatest);
       setBestMovies([...allMovies].filter(m => m.recommends > 0).sort((a,b) => b.rating - a.rating));
       setWorstMovies([...allMovies].filter(m => m.notRecommends > 0).sort((a,b) => a.rating - b.rating));
       
