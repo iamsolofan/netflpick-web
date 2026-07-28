@@ -1549,11 +1549,12 @@ function MainApp() {
       setWorstMovies([...allMovies].filter(m => m.notRecommends > 0).sort((a,b) => a.rating - b.rating));
       
       const allCombinedReviews = [...tempAllRatings, ...tempCinema].sort((a, b) => {
-         const dateA = new Date(a.date || 0);
-         const dateB = new Date(b.date || 0);
-         return dateB - dateA;
-      });
-      setGlobalLatestReviews(allCombinedReviews.slice(0, 10)); 
+        const timeA = new Date(a.date || 0).getTime();
+        const timeB = new Date(b.date || 0).getTime();
+        // 에러가 나더라도 무시하고, 무조건 가장 최근 시간(큰 숫자)이 맨 위로 오게 강력 정렬!
+        return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
+     });
+     setGlobalLatestReviews(allCombinedReviews.slice(0, 10));
 
     } catch(e) { console.error("전체 영화 로딩 실패:", e); }
   };
