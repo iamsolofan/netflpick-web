@@ -1473,6 +1473,44 @@ const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
             {filteredReviews.map((review, index) => (
               <div key={`${review.dbId}-${index}`} onClick={() => onMovieClick(review)} className="bg-gray-900 p-4 rounded-lg flex gap-4 border border-gray-700 hover:border-gray-500 cursor-pointer transition-colors group relative">
                 
+                {/* 🔥 포스터 뱃지는 없애고 아주 깔끔하게 포스터만 둡니다 */}
+                <img src={review.poster} alt="" className="w-16 h-24 object-cover rounded shadow-md shrink-0 group-hover:opacity-80 transition-opacity" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(review.title)}`; }} />
+                
+                <div className="flex flex-col justify-center w-full overflow-hidden flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                    <h4 className="text-md font-bold text-white leading-tight truncate pr-2">{review.title}</h4>
+                  </div>
+
+                  {/* 🔥 닉네임, 날짜, 추천 여부를 제목 바로 아래로 깔끔하게 정리 */}
+                  <div className="flex items-center gap-1.5 text-[10px] text-gray-400 mb-2">
+                    <span className="font-bold text-gray-300">
+                      {review.panelName === '신작' ? '🎬 신작 소개작' : review.reviewerName}
+                    </span>
+                    {review.panelName !== '신작' && (
+                      <>
+                        <span className="text-gray-600">|</span>
+                        <span className={`font-bold ${review.isRecommend === 'both' ? 'text-yellow-400' : (review.isRecommend ? 'text-green-400' : 'text-red-400')}`}>
+                          {review.isRecommend === 'both' ? '🤔 호불호' : (review.isRecommend ? '👍 추천' : '👎 비추천')}
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* 🔥 신작 패널별 의견 쫙 뿌려주는 영역 */}
+                  {review.panelName === '신작' && review.opinions && (
+                    <div className="flex flex-wrap gap-1 mb-1.5">
+                      {review.opinions.filter(op => op.active).map((op, i) => (
+                        <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded font-extrabold border ${op.isRecommend ? 'bg-green-900/40 text-green-400 border-green-700' : 'bg-red-900/40 text-red-400 border-red-700'}`}>
+                          {op.critic === '기타' ? op.customName : op.critic} {op.isRecommend ? '👍' : '👎'}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="text-yellow-400 text-sm font-bold mb-1">★ {Number(review.rating).toFixed(1)}</div>
+                  <span className="text-gray-500 text-[10px] mb-1">{review.broadcastDate}</span>
+                  <p className="text-gray-300 text-xs truncate">"{review.comment}"</p>
+                </div>
               </div>
             ))}
           </div>
