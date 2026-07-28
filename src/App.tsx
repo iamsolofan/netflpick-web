@@ -1490,8 +1490,7 @@ const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
                       <>
                         <span className="text-gray-600">|</span>
                         <span className={`font-bold ${review.isRecommend === 'both' ? 'text-yellow-400' : (review.isRecommend ? 'text-green-400' : 'text-red-400')}`}>
-                          {review.isRecommend === 'both' ? '🤔 호불호' : (review.isRecommend ? '👍 추천' : '👎 비추천')}
-                        </span>
+                        {review.isRecommend === 'both' ? '🤔' : (review.isRecommend ? '👍' : '👎')}                        </span>
                       </>
                     )}
                   </div>
