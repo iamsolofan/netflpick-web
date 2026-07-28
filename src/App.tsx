@@ -979,6 +979,86 @@ const ReviewModal = ({ isOpen, onClose, onAddRating, onUpdateRating, user, initi
   );
 };
 
+const AdminNewReleaseRow = ({ label, value, onChange }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [results, setResults] = useState([]);
+
+  useEffect(() => {
+    if (!searchTerm.trim()) return setResults([]);
+    const timer = setTimeout(async () => {
+      try {
+        const [resM, resT] = await Promise.all([
+          fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&language=ko-KR&query=${searchTerm}&page=1`),
+          fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&language=ko-KR&query=${searchTerm}&page=1`)
+        ]);
+        const dataM = await resM.json();
+        const dataT = await resT.json();
+        const combined = [...(dataM.results||[]).map(m=>({...m, title:m.title||m.name})), ...(dataT.results||[]).map(t=>({...t, title:t.name||t.title}))].slice(0,5);
+        setResults(combined);
+      } catch(e){}
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const handleOpinion = (idx, field, val) => {
+    const newOps = [...(value.opinions || [])];
+    newOps[idx] = { ...newOps[idx], [field]: val };
+    onChange({ ...value, opinions: newOps });
+  };
+
+  if (value.title) {
+    return (
+      <div className="mb-4 bg-blue-900/20 p-4 rounded-xl border border-blue-700 shadow-lg">
+         <div className="flex justify-between items-center mb-3">
+           <h3 className="font-extrabold text-blue-400 text-lg">{label}</h3>
+           <button onClick={() => onChange({...value, title: '', movieId: null, poster: ''})} className="text-xs bg-gray-700 px-3 py-1.5 rounded font-bold hover:bg-gray-600">다시 검색</button>
+         </div>
+         <div className="flex gap-4 items-center mb-4 bg-gray-900 p-3 rounded-lg border border-gray-700">
+           <img src={value.poster} alt="" className="w-12 h-16 object-cover rounded shadow-md" />
+           <span className="font-bold text-white">{value.title}</span>
+         </div>
+         
+         <div className="mb-4">
+           <h4 className="text-xs font-bold text-blue-300 mb-2">💡 패널별 평가 (참여한 사람만 체크해서 입력하세요)</h4>
+           {(value.opinions || []).map((op, idx) => (
+             <div key={idx} className={`flex items-center gap-3 mb-2 p-2 rounded-lg border transition-colors ${op.active ? 'bg-gray-800 border-gray-600' : 'bg-gray-900 border-gray-800'}`}>
+               <input type="checkbox" checked={op.active} onChange={e => handleOpinion(idx, 'active', e.target.checked)} className="w-4 h-4 cursor-pointer accent-blue-500" />
+               {op.critic === '기타' ? (
+                 <input type="text" placeholder="기타 이름" value={op.customName} onChange={e => handleOpinion(idx, 'customName', e.target.value)} disabled={!op.active} className="w-24 p-1.5 bg-gray-700 text-white text-xs font-bold border border-gray-600 rounded outline-none focus:border-blue-500 disabled:opacity-50" />
+               ) : (
+                 <span className={`text-sm w-20 font-bold ${op.active ? 'text-white' : 'text-gray-500'}`}>{op.critic}</span>
+               )}
+               <div className="flex gap-2 flex-1">
+                 <button disabled={!op.active} onClick={() => handleOpinion(idx, 'isRecommend', true)} className={`flex-1 py-1.5 text-xs font-bold rounded transition-colors disabled:opacity-30 ${op.isRecommend === true ? 'bg-green-600 text-white shadow-md' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}>👍 추천</button>
+                 <button disabled={!op.active} onClick={() => handleOpinion(idx, 'isRecommend', false)} className={`flex-1 py-1.5 text-xs font-bold rounded transition-colors disabled:opacity-30 ${op.isRecommend === false ? 'bg-red-600 text-white shadow-md' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}>👎 비추천</button>
+               </div>
+             </div>
+           ))}
+         </div>
+         <textarea placeholder="신작 전체 한줄평 (선택)" value={value.comment} onChange={e => onChange({...value, comment: e.target.value})} className="w-full p-3 bg-gray-900 text-white rounded-lg text-sm resize-none h-16 border border-gray-700 outline-none focus:border-blue-500" />
+      </div>
+    );
+  }
+  
+  return (
+    <div className="mb-4 bg-gray-800 p-4 rounded-xl border border-gray-700">
+       <h3 className="font-extrabold text-blue-400 mb-3 text-lg">{label}</h3>
+       <input type="text" placeholder="신작 영화 검색..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full p-3 bg-gray-900 text-white rounded-lg border border-gray-700 outline-none focus:border-blue-500 font-bold" />
+       {results.length > 0 && (
+         <div className="mt-2 max-h-40 overflow-y-auto bg-gray-900 rounded-lg border border-gray-700 shadow-xl">
+           {results.map(m => (
+             <div key={m.id} className="p-3 hover:bg-gray-700 cursor-pointer text-sm flex justify-between items-center border-b border-gray-800 transition-colors" onClick={() => {
+               onChange({...value, movieId: m.id, title: m.title, poster: m.poster_path ? `${TMDB_IMAGE_BASE}${m.poster_path}` : `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(m.title)}`});
+               setSearchTerm(''); setResults([]);
+             }}>
+               <span className="font-bold text-white">{m.title}</span>
+             </div>
+           ))}
+         </div>
+       )}
+    </div>
+  );
+};
 const AdminCinemaInputRow = ({ label, value, onChange, isNewRelease, isOther }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState([]);
