@@ -274,11 +274,6 @@ const LatestReviewsSection = ({ latestReviews, onMovieClick }) => (
           {latestReviews.map((review, idx) => (
             <div key={idx} className="flex gap-6 items-center border-b border-gray-700 pb-6 last:border-0 last:pb-0 relative mt-2">
               
-              {/* 🔥 최신 리뷰용 통합 뱃지 (신작 파란색 + 호불호/추천) */}
-              <div className={`absolute -top-4 -left-2 text-white text-[10px] sm:text-xs font-extrabold px-2 py-0.5 rounded-full shadow-md z-10 ${review.panelName === '신작' ? 'bg-blue-600 border border-blue-500' : (review.isRecommend === 'both' ? 'bg-yellow-500 text-black border border-yellow-400' : (review.isRecommend ? 'bg-green-600 border border-green-500' : 'bg-red-600 border border-red-500'))}`}>
-                {review.panelName === '신작' ? '🎬 신작 소개작' : `${review.reviewerName || review.nickname || '익명'} ${review.isRecommend === 'both' ? '🤔호불호' : (review.isRecommend ? '👍추천' : '👎비추천')}`}
-              </div>
-
               <img src={review.poster} onClick={() => onMovieClick(review)} alt="" className="w-20 h-28 object-cover rounded shadow-md bg-gray-700 cursor-pointer hover:opacity-80 transition-opacity shrink-0" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(review.title)}`; }} />
               <div className="flex-1">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
@@ -286,6 +281,25 @@ const LatestReviewsSection = ({ latestReviews, onMovieClick }) => (
                   <div className="flex items-center gap-2">
                     <span className="text-yellow-400 text-sm font-bold">★ {Number(review.rating).toFixed(1)}</span>
                   </div>
+                </div>
+
+                {/* 🔥 닉네임, 날짜, 추천 여부를 제목 바로 아래로 이동 */}
+                <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
+                  <span className="font-bold text-gray-300">
+                    {review.panelName === '신작' ? '🎬 신작 소개작' : (review.reviewerName || review.nickname || '익명')}
+                  </span>
+                  <span className="text-gray-600">|</span>
+                  <span>{review.date ? new Date(review.date).toLocaleDateString('ko-KR') : ''}</span>
+                  
+                  {/* 신작이 아닌 경우에만 추천/비추천 여부 표시 */}
+                  {review.panelName !== '신작' && (
+                    <>
+                      <span className="text-gray-600">|</span>
+                      <span className={`font-bold ${review.isRecommend === 'both' ? 'text-yellow-400' : (review.isRecommend ? 'text-green-400' : 'text-red-400')}`}>
+                        {review.isRecommend === 'both' ? '🤔 호불호' : (review.isRecommend ? '👍 추천' : '👎 비추천')}
+                      </span>
+                    </>
+                  )}
                 </div>
 
                 {/* 🔥 신작 패널별 의견 쫙 뿌려주는 영역 */}
@@ -299,9 +313,6 @@ const LatestReviewsSection = ({ latestReviews, onMovieClick }) => (
                   </div>
                 )}
 
-                <p className="text-xs text-gray-400 mb-2">
-                  <span className="text-gray-500">{review.date ? new Date(review.date).toLocaleDateString('ko-KR') : ''}</span>
-                </p>
                 <p className="text-gray-300 text-sm bg-gray-900 p-3 rounded border border-gray-700">"{review.comment}"</p>
               </div>
             </div>
