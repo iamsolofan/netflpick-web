@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, Link } from 'react-router-dom';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
+import { Analytics } from '@vercel/analytics/react';
 
 // ==========================================
 // 1. Firebase 및 초기화 세팅
@@ -1417,6 +1418,7 @@ export default function App() {
       <Router>
         <MainApp />
       </Router>
+      <Analytics />
     </HelmetProvider>
   );
 }
