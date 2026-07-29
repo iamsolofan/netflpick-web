@@ -1469,51 +1469,32 @@ const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
             {filteredReviews.map((review, index) => (
-              <div key={`${review.dbId}-${index}`} onClick={() => onMovieClick(review)} className="bg-gray-900 p-4 rounded-lg flex gap-4 border border-gray-700 hover:border-gray-500 cursor-pointer transition-colors group relative">
+              <div key={`${review.dbId}-${index}`} onClick={() => onMovieClick(review)} className="relative bg-gray-800 rounded-xl p-6 border border-gray-700 min-h-[140px] cursor-pointer hover:border-gray-500 transition-all shadow-lg">
+  
+              {/* 🔥 1. 오직 '기타' 탭에서만 뱃지 노출 (activePanel 조건 추가) */}
+              {/* 🔥 2. absolute -top-3 -left-3 로 포스터가 아닌 카드 밖 테두리에 위치 */}
+              {activePanel === '기타' && (
+                <div className={`absolute -top-3 -left-3 text-[12px] sm:text-sm font-extrabold px-3 py-1 rounded-full shadow-md z-10 backdrop-blur-sm ${review.isRecommend === 'both' ? 'bg-yellow-900/80 text-yellow-400 border border-yellow-700/50' : (review.isRecommend ? 'bg-green-900/80 text-green-400 border border-green-700/50' : 'bg-red-900/80 text-red-400 border border-red-700/50')}`}>
+                  {/* 🔥 3. 이름 옆에 나란히 엄지손가락 배치 */}
+                  [ {review.reviewerName} {review.isRecommend === 'both' ? '🤔' : (review.isRecommend ? '👍' : '👎')} ]
+                </div>
+              )}
+            
+              <div className="flex gap-4">
+                {/* 포스터는 뱃지에 가려지지 않고 온전히 노출됩니다 */}
+                <img src={review.poster} alt="" className="w-16 h-24 object-cover rounded shadow-md shrink-0" />
                 
-                {/* 🔥 포스터 뱃지는 없애고 아주 깔끔하게 포스터만 둡니다 */}
-                <div className="relative shrink-0">
-  {activePanel === '기타' && (
-    <div className={`absolute -top-3 -left-3 text-[12px] sm:text-sm font-extrabold px-3 py-1 rounded-full shadow-md z-10 backdrop-blur-sm ${review.panelName === '신작' ? 'bg-blue-600 text-white border border-blue-500' : (review.isRecommend === 'both' ? 'bg-yellow-900/80 text-yellow-400 border border-yellow-700/50' : (review.isRecommend ? 'bg-green-900/80 text-green-400 border border-green-700/50' : 'bg-red-900/80 text-red-400 border border-red-700/50'))}`}>
-      {review.panelName === '신작' ? '🎬 신작 소개작' : `${review.reviewerName} ${review.isRecommend === 'both' ? '🤔' : (review.isRecommend ? '👍' : '👎')}`}
-    </div>
-  )}
-  <img src={review.poster} alt="" className="w-16 h-24 object-cover rounded shadow-md" />
-</div>                
-                <div className="flex flex-col justify-center w-full overflow-hidden flex-1">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                    <h4 className="text-md font-bold text-white leading-tight truncate pr-2">{review.title}</h4>
+                <div className="flex flex-col flex-grow min-w-0">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <h4 className="text-md font-bold text-white leading-tight truncate">{review.title}</h4>
                   </div>
-
-                  {/* 🔥 닉네임, 날짜, 추천 여부를 제목 바로 아래로 깔끔하게 정리 */}
-                  <div className="flex items-center gap-1.5 text-[10px] text-gray-400 mb-2">
-                    <span className="font-bold text-gray-300">
-                      {review.panelName === '신작' ? '🎬 신작 소개작' : review.reviewerName}
-                    </span>
-                    {review.panelName !== '신작' && (
-                      <>
-                        <span className="text-gray-600">|</span>
-                        <span className={`font-bold ${review.isRecommend === 'both' ? 'text-yellow-400' : (review.isRecommend ? 'text-green-400' : 'text-red-400')}`}>
-                        {review.isRecommend === 'both' ? '🤔 호불호' : (review.isRecommend ? '👍 추천' : '👎 비추천')}</span>                      </>
-                    )}
-                  </div>
-
-                  {/* 🔥 신작 패널별 의견 쫙 뿌려주는 영역 */}
-                  {review.panelName === '신작' && review.opinions && (
-                    <div className="flex flex-wrap gap-1 mb-1.5">
-                      {review.opinions.filter(op => op.active).map((op, i) => (
-                        <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded font-extrabold border ${op.isRecommend ? 'bg-green-900/40 text-green-400 border-green-700' : 'bg-red-900/40 text-red-400 border-red-700'}`}>
-                          {op.critic === '기타' ? op.customName : op.critic} {op.isRecommend ? '👍' : '👎'}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="text-yellow-400 text-sm font-bold mb-1">★ {Number(review.rating).toFixed(1)}</div>
-                  <span className="text-gray-500 text-[10px] mb-1">{review.broadcastDate}</span>
-                  <p className="text-gray-300 text-xs truncate">"{review.comment}"</p>
+                  
+                  <p className="text-yellow-400 text-sm font-bold mb-1">★ {Number(review.rating).toFixed(1)}</p>
+                  <p className="text-gray-500 text-[10px] mb-1.5">{review.broadcastDate}</p>
+                  <p className="text-gray-300 text-xs truncate">{review.comment}</p>
                 </div>
               </div>
+            </div>
             ))}
           </div>
         )}
