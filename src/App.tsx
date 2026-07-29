@@ -1472,8 +1472,12 @@ const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
               <div key={`${review.dbId}-${index}`} onClick={() => onMovieClick(review)} className="bg-gray-900 p-4 rounded-lg flex gap-4 border border-gray-700 hover:border-gray-500 cursor-pointer transition-colors group relative">
                 
                 {/* 🔥 포스터 뱃지는 없애고 아주 깔끔하게 포스터만 둡니다 */}
-                <img src={review.poster} alt="" className="w-16 h-24 object-cover rounded shadow-md shrink-0 group-hover:opacity-80 transition-opacity" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(review.title)}`; }} />
-                
+                <div className="relative shrink-0">
+  <div className={`absolute -top-3 -left-3 text-[12px] sm:text-sm font-extrabold px-3 py-1 rounded-full shadow-md z-10 backdrop-blur-sm ${review.panelName === '신작' ? 'bg-blue-600 text-white border border-blue-500' : (review.isRecommend === 'both' ? 'bg-yellow-900/80 text-yellow-400 border border-yellow-700/50' : (review.isRecommend ? 'bg-green-900/80 text-green-400 border border-green-700/50' : 'bg-red-900/80 text-red-400 border border-red-700/50'))}`}>
+    {review.panelName === '신작' ? '🎬 신작 소개작' : `${review.reviewerName} ${review.isRecommend === 'both' ? '🤔' : (review.isRecommend ? '👍' : '👎')}`}
+  </div>
+  <img src={review.poster} alt="" className="w-16 h-24 object-cover rounded shadow-md" />
+</div>                
                 <div className="flex flex-col justify-center w-full overflow-hidden flex-1">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
                     <h4 className="text-md font-bold text-white leading-tight truncate pr-2">{review.title}</h4>
