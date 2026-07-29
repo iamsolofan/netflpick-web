@@ -170,16 +170,17 @@ if (cinemaReviews.length > 0) {
     <div className="max-w-2xl mx-auto animate-fadeIn mt-4">
 
 <Helmet>
-  <title>{movie.title} 평점 및 한줄평 모음 - 넷플픽</title>
+  {/* 🔥 검색량 폭발 키워드를 전면 배치한 제목 */}
+  <title>[넷플픽] {movie.title} 평점 리뷰 - 넷플릭스 영화 추천 및 순위</title>
+  
+  {/* 🔥 월간 검색량이 높은 알짜 키워드로 문맥을 구성한 설명 */}
   <meta 
     name="description" 
-    content={
-      maebulStatus === 'recommend' ? `🔥 매불쇼 강력 추천! '${movie.title}'의 줄거리와 평점을 확인하세요.` :
-      maebulStatus === 'not_recommend' ? `💣 매불쇼 비추천! '${movie.title}'의 진짜 평가를 확인하세요.` :
-      maebulStatus === 'mixed' ? `🤔 매불쇼 패널들의 의견이 격렬하게 갈린 문제작! '${movie.title}'의 호불호 평가를 확인하세요.` :
-      `'${movie.title}'의 평점과 한줄평을 확인하세요.`
-    } 
+    content={`넷플릭스 추천 영화 '${movie.title}' 평점 및 리뷰! 넷플릭스 영화 추천 명작부터 넷플릭스 순위, 넷플릭스 추천 드라마 시리즈까지 넷플픽에서 한 번에 확인하세요. (화제작 동궁 넷플릭스 최신 리뷰 포함)`} 
   />
+  
+  {/* 🔥 월간 검색량 최상위 키워드 총집합 */}
+  <meta name="keywords" content={`${movie.title}, 넷플릭스 추천, 넷플릭스 영화 추천, 동궁 넷플릭스, 넷플릭스 순위, 넷플릭스 추천 영화, 넷플릭스 추천 드라마, 넷플릭스 영화 순위, 넷플릭스 시리즈 추천`} />
 </Helmet>
 
       <div className="flex flex-col sm:flex-row gap-5 mb-8 bg-gray-800 p-4 md:p-6 rounded-2xl border border-gray-700 shadow-xl">
