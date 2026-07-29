@@ -1475,8 +1475,8 @@ const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
               {/* 🔥 2. absolute -top-3 -left-3 로 포스터가 아닌 카드 밖 테두리에 위치 */}
               {activePanel === '기타' && (
                 <div className={`absolute -top-3 -left-3 text-[12px] sm:text-sm font-extrabold px-3 py-1 rounded-full shadow-md z-10 backdrop-blur-sm ${review.isRecommend === 'both' ? 'bg-yellow-900/80 text-yellow-400 border border-yellow-700/50' : (review.isRecommend ? 'bg-green-900/80 text-green-400 border border-green-700/50' : 'bg-red-900/80 text-red-400 border border-red-700/50')}`}>
-                  {/* 🔥 3. 이름 옆에 나란히 엄지손가락 배치 */}
-                  [ {review.reviewerName} {review.isRecommend === 'both' ? '🤔' : (review.isRecommend ? '👍' : '👎')} ]
+                  {/* 🔥 3. 이름 옆에 나란히 엄지손가락 배치 (대괄호 제거됨) */}
+                  {review.reviewerName} {review.isRecommend === 'both' ? '🤔' : (review.isRecommend ? '👍' : '👎')}
                 </div>
               )}
             
