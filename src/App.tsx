@@ -1255,12 +1255,12 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
   const initialFormState = { title: '', isRecommend: true, comment: '', docId: null, movieId: null, poster: '' };
   
   const initialNewReleaseState = { 
-    ...initialFormState,
+    title: '', isRecommend: true, comment: '', docId: null, movieId: null, poster: '',
     opinions: [
-      { critic: '라이너', isRecommend: true, active: false },
-      { critic: '거의없다', isRecommend: true, active: false },
-      { critic: '전찬일', isRecommend: true, active: false },
-      { critic: '기타', customName: '', isRecommend: true, active: false }
+      { critic: '라이너', isRecommend: null, active: false, rating: 8.0 },
+      { critic: '거의없다', isRecommend: null, active: false, rating: 8.0 },
+      { critic: '전찬일', isRecommend: null, active: false, rating: 8.0 },
+      { critic: '기타', customName: '', isRecommend: null, active: false, rating: 8.0 }
     ]
   };
 
