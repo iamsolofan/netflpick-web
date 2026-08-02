@@ -159,7 +159,7 @@ useEffect(() => {
                 nickname: op.critic === '기타' ? (op.customName || '기타') : op.critic,
                 rating: op.rating || data.rating, 
                 isRecommend: op.isRecommend, // null(애매함) 허용
-                comment: data.comment, 
+                comment: op.comment || data.comment,
                 date: data.broadcastDate, 
                 isCinema: true
               });
@@ -1657,8 +1657,9 @@ function MainApp() {
                 rating: op.rating || data.rating, 
                 isRecommend: op.isRecommend,
                 date: data.broadcastDate, isCinema: true,
-                reviewerName: op.critic === '기타' ? (op.customName || '기타') : op.critic
-              });
+                reviewerName: op.critic === '기타' ? (op.customName || '기타') : op.critic,
+                comment: op.comment || data.comment
+              }); 
             }
           });
         } else {
