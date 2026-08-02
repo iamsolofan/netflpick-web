@@ -10,19 +10,6 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, getDoc, setDoc, updateDoc, where, deleteDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-
-// 👇👇👇 여기부터 복사해서 붙여넣으세요 👇👇👇
-declare global {
-  interface Window {
-    Kakao: any;
-  }
-}
-// 👆👆👆 여기까지 👆👆👆
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDVT-rVDkwJAUmtGqpu0JHkpYPn0E4MU2I",
-
 
 const firebaseConfig = {
   apiKey: "AIzaSyDVT-rVDkwJAUmtGqpu0JHkpYPn0E4MU2I",
