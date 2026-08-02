@@ -27,5 +27,8 @@
     "react-snap": "^1.23.0",
     "typescript": "~6.0.2",
     "vite": "^8.1.5"
+  },
+  "reactSnap": {
+    "source": "dist"
   }
 }
