@@ -105,63 +105,79 @@ const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
   const [actualReviews, setActualReviews] = useState([]);
 
 // 시네마지옥 리뷰만 따로 모아보기
+// 1. 뱃지 로직을 '다수결' 원칙으로 변경
 const cinemaReviews = actualReviews.filter(review => review.isCinema === true || review.isCinema === "true");
-
 let maebulStatus = 'none';
 
 if (cinemaReviews.length > 0) {
-  // true/false가 텍스트 형태로 저장되었을 경우까지 대비해서 유연하게 검사
-  const hasRecommend = cinemaReviews.some(review => review.isRecommend === true || String(review.isRecommend).toLowerCase() === 'true');
-  const hasNotRecommend = cinemaReviews.some(review => review.isRecommend === false || String(review.isRecommend).toLowerCase() === 'false');
+  let recCount = 0;
+  let nonRecCount = 0;
 
-  if (hasRecommend && hasNotRecommend) {
-    maebulStatus = 'mixed'; // 추천/비추천 리뷰가 둘 다 존재하면 '호불호'
-  } else if (hasRecommend) {
-    maebulStatus = 'recommend'; // 추천만 있으면 '강력 추천'
-  } else if (hasNotRecommend) {
-    maebulStatus = 'not_recommend'; // 비추천만 있으면 '비추천'
-  } else {
-    // 🔥 [핵심] 호프처럼 true/false가 아닌 애매한 예외 값으로 저장된 경우, 무조건 '호불호'로 띄워라!
-    maebulStatus = 'mixed'; 
-  }
+  cinemaReviews.forEach(review => {
+    if (review.isRecommend === true || String(review.isRecommend).toLowerCase() === 'true') recCount++;
+    else if (review.isRecommend === false || String(review.isRecommend).toLowerCase() === 'false') nonRecCount++;
+  });
+
+  if (recCount > nonRecCount) maebulStatus = 'recommend';
+  else if (nonRecCount > recCount) maebulStatus = 'not_recommend';
+  else if (recCount === nonRecCount && recCount > 0) maebulStatus = 'mixed'; // 호불호
+  else maebulStatus = 'none';
 }
 
-  useEffect(() => {
-    if (!movie) { navigate('/'); return; }
-    document.title = `${movie.title} 평점 및 한줄평 모음 - 넷플픽`;
-    if (movie.id) {
-      fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=ko-KR&append_to_response=credits`)
-        .then(res => res.json())
-        .then(data => {
-          const director = data.credits?.crew?.find(c => c.job === 'Director')?.name;
-          const actors = data.credits?.cast?.slice(0, 3).map(a => a.name).join(', ');
-          setTmdbInfo({ ...data, director, actors });
-        })
-        .catch(err => console.error(err));
-    }
+useEffect(() => {
+  if (!movie) { navigate('/'); return; }
+  document.title = `${movie.title} 평점 및 한줄평 모음 - 넷플픽`;
+  
+  if (movie.id) {
+    fetch(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${TMDB_API_KEY}&language=ko-KR&append_to_response=credits`)
+      .then(res => res.json())
+      .then(data => {
+        const director = data.credits?.crew?.find(c => c.job === 'Director')?.name;
+        const actors = data.credits?.cast?.slice(0, 3).map(a => a.name).join(', ');
+        setTmdbInfo({ ...data, director, actors });
+      })
+      .catch(err => console.error(err));
+  }
 
-    const fetchReviews = async () => {
-      if (!db) return;
-      try {
-        const rSnap = await getDocs(query(collection(db, "ratings"), where("id", "==", movie.id)));
-        const cSnap = await getDocs(query(collection(db, "cinema_reviews"), where("id", "==", movie.id)));
+  const fetchReviews = async () => {
+    if (!db) return;
+    try {
+      const rSnap = await getDocs(query(collection(db, "ratings"), where("id", "==", movie.id)));
+      const cSnap = await getDocs(query(collection(db, "cinema_reviews"), where("id", "==", movie.id)));
+      
+      const reviews = [];
+      rSnap.forEach(doc => reviews.push({ ...doc.data(), isCinema: false }));
+      cSnap.forEach(doc => {
+        const data = doc.data();
         
-        const reviews = [];
-        rSnap.forEach(doc => reviews.push({ ...doc.data(), isCinema: false }));
-        cSnap.forEach(doc => {
-          const data = doc.data();
+        // 🔥 2. 솔직한 리뷰에 패널들을 개별적으로 쪼개서 표시하는 로직
+        if (data.panelName === '신작' && data.opinions) {
+          data.opinions.forEach((op, index) => {
+            if (op.active) {
+              reviews.push({
+                id: `${doc.id}_${index}`, 
+                nickname: op.critic === '기타' ? (op.customName || '기타') : op.critic,
+                rating: op.rating || data.rating, 
+                isRecommend: op.isRecommend, // null(애매함) 허용
+                comment: data.comment, 
+                date: data.broadcastDate, 
+                isCinema: true
+              });
+            }
+          });
+        } else {
           reviews.push({
             id: doc.id, nickname: data.reviewerName, rating: data.rating, isRecommend: data.isRecommend,
             comment: data.comment, date: data.broadcastDate, isCinema: true
           });
-        });
-        reviews.sort((a,b) => new Date(b.date || 0) - new Date(a.date || 0));
-        setActualReviews(reviews);
-      } catch(e) { console.error(e); }
-    };
-    fetchReviews();
-  }, [movie, navigate]);
-
+        }
+      });
+      reviews.sort((a,b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+      setActualReviews(reviews);
+    } catch(e) { console.error(e); }
+  };
+  fetchReviews();
+}, [movie, navigate]);
   if (!movie) return null;
 
   const displayReviews = reviewMode === 'collapsed' ? actualReviews.slice(0, 3) : actualReviews;
