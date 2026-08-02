@@ -1658,37 +1658,49 @@ function MainApp() {
       setAllRatings(tempAllRatings);
 
       const tempCinema = [];
-      cinemaSnap.forEach(doc => tempCinema.push({ docId: doc.id, ...doc.data(), date: doc.data().broadcastDate, isCinema: true }));
+      cinemaSnap.forEach(doc => {
+        const data = doc.data();
+        
+        // 🔥 신작 패널의 개별 의견을 독립적인 데이터로 쪼개어 전체 카운트에 반영합니다.
+        if (data.panelName === '신작' && data.opinions) {
+          data.opinions.forEach((op, index) => {
+            if (op.active) {
+              tempCinema.push({
+                docId: `${doc.id}_${index}`, id: data.id, title: data.title, poster: data.poster,
+                rating: op.rating || data.rating, 
+                isRecommend: op.isRecommend,
+                date: data.broadcastDate, isCinema: true,
+                reviewerName: op.critic === '기타' ? (op.customName || '기타') : op.critic
+              });
+            }
+          });
+        } else {
+          tempCinema.push({ docId: doc.id, ...data, date: data.broadcastDate, isCinema: true });
+        }
+      });
       setAllCinemaReviews(tempCinema);
 
       const movieMap = new Map();
 
-      // 🚨 'both' 평가 카운팅 로직 추가
-      tempAllRatings.forEach(data => {
+      // 전체 평점 및 추천수 계산 로직
+      const countMovieStats = (data) => {
         if (!movieMap.has(data.id)) {
           movieMap.set(data.id, { id: data.id, title: data.title, poster: data.poster, totalRating: 0, count: 0, recommends: 0, notRecommends: 0, latestDate: data.date });
         }
         const m = movieMap.get(data.id);
         m.totalRating += data.rating;
         m.count += 1;
+        
+        // 🔥 null(애매함) 값은 추천/비추천 어디에도 카운트되지 않도록 === true/false를 명확히 체크합니다.
         if (data.isRecommend === 'both') { m.recommends += 1; m.notRecommends += 1; }
-        else if (data.isRecommend) m.recommends += 1;
-        else m.notRecommends += 1;
+        else if (data.isRecommend === true) m.recommends += 1;
+        else if (data.isRecommend === false) m.notRecommends += 1;
+        
         if (new Date(data.date) > new Date(m.latestDate)) m.latestDate = data.date;
-      });
+      };
 
-      tempCinema.forEach(data => {
-        if (!movieMap.has(data.id)) {
-          movieMap.set(data.id, { id: data.id, title: data.title, poster: data.poster, totalRating: 0, count: 0, recommends: 0, notRecommends: 0, latestDate: data.date });
-        }
-        const m = movieMap.get(data.id);
-        m.totalRating += data.rating;
-        m.count += 1;
-        if (data.isRecommend === 'both') { m.recommends += 1; m.notRecommends += 1; }
-        else if (data.isRecommend) m.recommends += 1;
-        else m.notRecommends += 1;
-        if (new Date(data.date) > new Date(m.latestDate)) m.latestDate = data.date;
-      });
+      tempAllRatings.forEach(countMovieStats);
+      tempCinema.forEach(countMovieStats);
 
       const allMovies = Array.from(movieMap.values()).map(m => ({
         ...m,
