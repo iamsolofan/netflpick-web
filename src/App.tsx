@@ -3,9 +3,9 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, usePa
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { Analytics } from '@vercel/analytics/react';
 
-// ==========================================
+// ========================================
 // 1. Firebase 및 초기화 세팅
-// ==========================================
+// ========================================
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, getDoc, setDoc, updateDoc, where, deleteDoc } from 'firebase/firestore';
