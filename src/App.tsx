@@ -824,10 +824,11 @@ const NicknameModal = ({ isOpen, onSubmit, onCancel }) => {
 };
 
 const LoginModal = ({ isOpen, onClose }) => {
-  // 🔥 1. 카카오 초기화 세팅 추가
+  // 🔥 1. 카카오 초기화 (에러 안 나는 안전한 방식으로 변경)
   useEffect(() => {
-    if (window.Kakao && !window.Kakao.isInitialized()) {
-      window.Kakao.init(import.meta.env.VITE_KAKAO_JAVASCRIPT_KEY);
+    const kakao = (window as any).Kakao;
+    if (kakao && !kakao.isInitialized()) {
+      kakao.init(import.meta.env.VITE_KAKAO_JAVASCRIPT_KEY);
     }
   }, []);
 
@@ -838,7 +839,7 @@ const LoginModal = ({ isOpen, onClose }) => {
     catch (error) { alert("로그인 중 오류가 발생했습니다."); }
   };
 
-  // 🔥 2. 카카오 버튼 테스트용 함수 추가
+  // 🔥 2. 카카오 버튼 테스트용 함수
   const handleKakaoLogin = () => {
     alert("카카오 버튼 클릭 성공! 이제 진짜 로그인 기능을 연결할 차례입니다.");
   };
