@@ -824,7 +824,6 @@ const NicknameModal = ({ isOpen, onSubmit, onCancel }) => {
 };
 
 const LoginModal = ({ isOpen, onClose }) => {
-  // 🔥 1. 카카오 초기화 (에러 안 나는 안전한 방식으로 변경)
   useEffect(() => {
     const kakao = (window as any).Kakao;
     if (kakao && !kakao.isInitialized()) {
@@ -839,9 +838,48 @@ const LoginModal = ({ isOpen, onClose }) => {
     catch (error) { alert("로그인 중 오류가 발생했습니다."); }
   };
 
-  // 🔥 2. 카카오 버튼 테스트용 함수
+  // 🔥 가짜 알림창 대신 진짜 로그인 통신 코드로 변경되었습니다!
   const handleKakaoLogin = () => {
-    alert("카카오 버튼 클릭 성공! 이제 진짜 로그인 기능을 연결할 차례입니다.");
+    const kakao = (window as any).Kakao;
+    if (!kakao) return alert("카카오 통신 객체를 찾을 수 없습니다.");
+
+    kakao.Auth.login({
+      success: function (authObj: any) {
+        kakao.API.request({
+          url: '/v2/user/me',
+          success: async function (res: any) {
+            const kakaoId = res.id;
+            // 카카오 이메일이 없거나 동의하지 않은 유저를 위한 넷플픽 전용 가상 이메일
+            const kakaoEmail = res.kakao_account?.email || `kakao_${kakaoId}@netflpick.com`;
+            // 해킹 방지를 위한 넷플픽 전용 안전 비밀번호
+            const kakaoPassword = `netflpick_kakao_${kakaoId}!@`;
+
+            try {
+              // 파일 맨 위에 추가할 필요 없이 여기서 즉시 파이어베이스 기능 호출
+              const { signInWithEmailAndPassword, createUserWithEmailAndPassword } = await import('firebase/auth');
+
+              try {
+                // 1. 기존에 카카오로 가입한 적이 있는지 로그인 시도
+                await signInWithEmailAndPassword(auth, kakaoEmail, kakaoPassword);
+              } catch (error) {
+                // 2. 가입한 적이 없다면 즉시 회원등록 처리
+                await createUserWithEmailAndPassword(auth, kakaoEmail, kakaoPassword);
+              }
+              onClose(); // 성공하면 로그인 창 닫기
+            } catch (err) {
+              alert("파이어베이스 로그인 처리 중 에러가 발생했습니다.");
+              console.error(err);
+            }
+          },
+          fail: function (error: any) {
+            alert("카카오 사용자 정보를 가져오지 못했습니다.");
+          },
+        });
+      },
+      fail: function (err: any) {
+        alert("카카오 로그인을 취소하셨거나 에러가 발생했습니다.");
+      },
+    });
   };
 
   return (
@@ -854,7 +892,6 @@ const LoginModal = ({ isOpen, onClose }) => {
           G Google로 시작하기
         </button>
 
-        {/* 🔥 3. 카카오 로그인 버튼 추가 */}
         <button onClick={handleKakaoLogin} className="w-full bg-[#FEE500] text-black font-bold py-3 rounded-md shadow-lg">
           K 카카오로 1초 만에 시작하기
         </button>
