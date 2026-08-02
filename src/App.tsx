@@ -1240,15 +1240,16 @@ const AdminCinemaInputRow = ({ label, value, onChange, isNewRelease, isOther }) 
 const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
   const [date, setDate] = useState(getRecentFridayKST());
   
-  const initialFormState = { title: '', isRecommend: true, comment: '', docId: null, movieId: null, poster: '' };
+  // 🔥 rating 8.0 기본값 세팅 추가
+  const initialFormState = { title: '', isRecommend: true, comment: '', docId: null, movieId: null, poster: '', rating: 8.0 };
   
   const initialNewReleaseState = { 
-    title: '', isRecommend: true, comment: '', docId: null, movieId: null, poster: '',
+    ...initialFormState,
     opinions: [
-      { critic: '라이너', isRecommend: null, active: false, rating: 8.0 },
-      { critic: '거의없다', isRecommend: null, active: false, rating: 8.0 },
-      { critic: '전찬일', isRecommend: null, active: false, rating: 8.0 },
-      { critic: '기타', customName: '', isRecommend: null, active: false, rating: 8.0 }
+      { critic: '라이너', isRecommend: null, active: false, rating: 8.0, comment: '' },
+      { critic: '거의없다', isRecommend: null, active: false, rating: 8.0, comment: '' },
+      { critic: '전찬일', isRecommend: null, active: false, rating: 8.0, comment: '' },
+      { critic: '기타', customName: '', isRecommend: null, active: false, rating: 8.0, comment: '' }
     ]
   };
 
@@ -1258,8 +1259,6 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
   const [none, setNone] = useState({ ...initialFormState });
   const [choiG, setChoiG] = useState({ ...initialFormState });
   const [choiW, setChoiW] = useState({ ...initialFormState });
-  
-  // 🔥 기본값을 아예 '직접입력'으로 고정해버립니다.
   const [other, setOther] = useState({ ...initialFormState, otherName: '직접입력', customName: '' });
 
   useEffect(() => {
@@ -1269,7 +1268,9 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
         let nR = { ...initialNewReleaseState }, j = { ...initialFormState }, l = { ...initialFormState }, n = { ...initialFormState }, cG = { ...initialFormState }, cW = { ...initialFormState }, o = { ...initialFormState, otherName: '직접입력', customName: '' };
         
         editData.forEach(r => {
-          const mappedData = { title: r.title, poster: r.poster, isRecommend: r.isRecommend, comment: r.comment, movieId: r.id, docId: r.dbId };
+          // 🔥 DB에서 평점(rating) 불러오기 적용
+          const mappedData = { title: r.title, poster: r.poster, isRecommend: r.isRecommend, comment: r.comment, movieId: r.id, docId: r.dbId, rating: r.rating !== undefined ? r.rating : 8.0 };
+          
           if (r.panelName === '신작') nR = { ...mappedData, opinions: r.opinions || initialNewReleaseState.opinions };
           else if (r.panelName === '전찬일') j = mappedData;
           else if (r.panelName === '라이너') l = mappedData;
@@ -1277,7 +1278,6 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
           else if (r.panelName === '최광희') cG = mappedData;
           else if (r.panelName === '최욱') cW = mappedData;
           else if (r.panelName === '기타') {
-            // 🔥 쓸데없는 이름 검사 로직 싹 지우고 바로 무조건 직접입력으로 받습니다.
             o = { ...mappedData, otherName: '직접입력', customName: r.reviewerName };
           }
         });
@@ -1303,14 +1303,13 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
             hasData = true;
             const finalPanelName = entry.panel === '기타' ? ((entry.data.otherName === '직접입력' ? entry.data.customName : entry.data.otherName) || '기타') : entry.panel;
             
-            // 🚨 신작 둘다 추천('both') 시 평점 조율 로직 
             const reviewObj = {
               id: entry.data.movieId || Date.now() + Math.random(),
               title: entry.data.title, poster: entry.data.poster,
-              rating: entry.panel === '신작' ? 8.0 : 8.0, 
+              rating: entry.data.rating !== undefined ? entry.data.rating : 8.0, // 🔥 사용자가 직접 바꾼 별점 저장
               isRecommend: entry.panel === '신작' ? true : entry.data.isRecommend,
-              opinions: entry.panel === '신작' ? entry.data.opinions : null, // 🔥 추가된 부분
-              comment: entry.data.comment || '한줄평 없음',
+              opinions: entry.panel === '신작' ? entry.data.opinions : null, 
+              comment: entry.data.comment || '', 
               panelName: entry.panel, reviewerName: finalPanelName, broadcastDate: date
             };
             
