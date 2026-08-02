@@ -1111,18 +1111,24 @@ const AdminNewReleaseRow = ({ label, value, onChange }) => {
          </div>
          
          <div className="mb-4">
-           <h4 className="text-xs font-bold text-blue-300 mb-2">💡 패널별 평가 (참여한 사람만 체크해서 입력하세요)</h4>
+           <h4 className="text-xs font-bold text-blue-300 mb-2">💡 패널별 평가 (참여한 사람 체크, 별점 직접 입력 가능)</h4>
            {(value.opinions || []).map((op, idx) => (
-             <div key={idx} className={`flex items-center gap-3 mb-2 p-2 rounded-lg border transition-colors ${op.active ? 'bg-gray-800 border-gray-600' : 'bg-gray-900 border-gray-800'}`}>
-               <input type="checkbox" checked={op.active} onChange={e => handleOpinion(idx, 'active', e.target.checked)} className="w-4 h-4 cursor-pointer accent-blue-500" />
+             <div key={idx} className={`flex items-center gap-2 mb-2 p-2 rounded-lg border transition-colors ${op.active ? 'bg-gray-800 border-gray-600' : 'bg-gray-900 border-gray-800'}`}>
+               <input type="checkbox" checked={op.active} onChange={e => handleOpinion(idx, 'active', e.target.checked)} className="w-4 h-4 cursor-pointer accent-blue-500 shrink-0" />
                {op.critic === '기타' ? (
-                 <input type="text" placeholder="기타 이름" value={op.customName} onChange={e => handleOpinion(idx, 'customName', e.target.value)} disabled={!op.active} className="w-24 p-1.5 bg-gray-700 text-white text-xs font-bold border border-gray-600 rounded outline-none focus:border-blue-500 disabled:opacity-50" />
+                 <input type="text" placeholder="기타 이름" value={op.customName} onChange={e => handleOpinion(idx, 'customName', e.target.value)} disabled={!op.active} className="w-16 p-1.5 bg-gray-700 text-white text-[10px] font-bold border border-gray-600 rounded outline-none focus:border-blue-500 disabled:opacity-50" />
                ) : (
-                 <span className={`text-sm w-20 font-bold ${op.active ? 'text-white' : 'text-gray-500'}`}>{op.critic}</span>
+                 <span className={`text-xs w-12 font-bold ${op.active ? 'text-white' : 'text-gray-500'}`}>{op.critic}</span>
                )}
-               <div className="flex gap-2 flex-1">
-                 <button disabled={!op.active} onClick={() => handleOpinion(idx, 'isRecommend', true)} className={`flex-1 py-1.5 text-xs font-bold rounded transition-colors disabled:opacity-30 ${op.isRecommend === true ? 'bg-green-600 text-white shadow-md' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}>👍 추천</button>
-                 <button disabled={!op.active} onClick={() => handleOpinion(idx, 'isRecommend', false)} className={`flex-1 py-1.5 text-xs font-bold rounded transition-colors disabled:opacity-30 ${op.isRecommend === false ? 'bg-red-600 text-white shadow-md' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}>👎 비추천</button>
+               <div className="flex gap-1 flex-1">
+                 {/* 🔥 한 번 더 누르면 null (애매함) 상태로 되돌아갑니다 */}
+                 <button disabled={!op.active} onClick={() => handleOpinion(idx, 'isRecommend', op.isRecommend === true ? null : true)} className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors disabled:opacity-30 ${op.isRecommend === true ? 'bg-green-600 text-white shadow-md' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}>👍 추천</button>
+                 <button disabled={!op.active} onClick={() => handleOpinion(idx, 'isRecommend', op.isRecommend === false ? null : false)} className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors disabled:opacity-30 ${op.isRecommend === false ? 'bg-red-600 text-white shadow-md' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}>👎 비추천</button>
+               </div>
+               {/* 🔥 별점 입력란 */}
+               <div className="flex items-center gap-1 shrink-0">
+                 <span className="text-yellow-400 text-xs">★</span>
+                 <input type="number" step="0.5" min="0" max="10" value={op.rating === undefined ? 8.0 : op.rating} onChange={e => handleOpinion(idx, 'rating', Number(e.target.value))} disabled={!op.active} className="w-12 p-1 bg-gray-900 border border-gray-600 rounded text-white text-xs text-center outline-none focus:border-blue-500 disabled:opacity-50" />
                </div>
              </div>
            ))}
