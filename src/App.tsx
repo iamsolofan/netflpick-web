@@ -1111,29 +1111,33 @@ const AdminNewReleaseRow = ({ label, value, onChange }) => {
          </div>
          
          <div className="mb-4">
-           <h4 className="text-xs font-bold text-blue-300 mb-2">💡 패널별 평가 (참여한 사람 체크, 별점 직접 입력 가능)</h4>
+           <h4 className="text-xs font-bold text-blue-300 mb-2">💡 패널별 평가 (체크 시 개별 한줄평 입력 가능)</h4>
            {(value.opinions || []).map((op, idx) => (
-             <div key={idx} className={`flex items-center gap-2 mb-2 p-2 rounded-lg border transition-colors ${op.active ? 'bg-gray-800 border-gray-600' : 'bg-gray-900 border-gray-800'}`}>
-               <input type="checkbox" checked={op.active} onChange={e => handleOpinion(idx, 'active', e.target.checked)} className="w-4 h-4 cursor-pointer accent-blue-500 shrink-0" />
-               {op.critic === '기타' ? (
-                 <input type="text" placeholder="기타 이름" value={op.customName} onChange={e => handleOpinion(idx, 'customName', e.target.value)} disabled={!op.active} className="w-16 p-1.5 bg-gray-700 text-white text-[10px] font-bold border border-gray-600 rounded outline-none focus:border-blue-500 disabled:opacity-50" />
-               ) : (
-                 <span className={`text-xs w-12 font-bold ${op.active ? 'text-white' : 'text-gray-500'}`}>{op.critic}</span>
+             <div key={idx} className={`flex flex-col gap-2 mb-2 p-2 rounded-lg border transition-colors ${op.active ? 'bg-gray-800 border-gray-600' : 'bg-gray-900 border-gray-800'}`}>
+               <div className="flex items-center gap-2">
+                 <input type="checkbox" checked={op.active} onChange={e => handleOpinion(idx, 'active', e.target.checked)} className="w-4 h-4 cursor-pointer accent-blue-500 shrink-0" />
+                 {op.critic === '기타' ? (
+                   <input type="text" placeholder="기타 이름" value={op.customName} onChange={e => handleOpinion(idx, 'customName', e.target.value)} disabled={!op.active} className="w-16 p-1.5 bg-gray-700 text-white text-[10px] font-bold border border-gray-600 rounded outline-none focus:border-blue-500 disabled:opacity-50" />
+                 ) : (
+                   <span className={`text-xs w-12 font-bold ${op.active ? 'text-white' : 'text-gray-500'}`}>{op.critic}</span>
+                 )}
+                 <div className="flex gap-1 flex-1">
+                   <button disabled={!op.active} onClick={() => handleOpinion(idx, 'isRecommend', op.isRecommend === true ? null : true)} className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors disabled:opacity-30 ${op.isRecommend === true ? 'bg-green-600 text-white shadow-md' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}>👍 추천</button>
+                   <button disabled={!op.active} onClick={() => handleOpinion(idx, 'isRecommend', op.isRecommend === false ? null : false)} className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors disabled:opacity-30 ${op.isRecommend === false ? 'bg-red-600 text-white shadow-md' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}>👎 비추천</button>
+                 </div>
+                 <div className="flex items-center gap-1 shrink-0">
+                   <span className="text-yellow-400 text-xs">★</span>
+                   <input type="number" step="0.5" min="0" max="10" value={op.rating === undefined ? 8.0 : op.rating} onChange={e => handleOpinion(idx, 'rating', Number(e.target.value))} disabled={!op.active} className="w-12 p-1 bg-gray-900 border border-gray-600 rounded text-white text-xs text-center outline-none focus:border-blue-500 disabled:opacity-50" />
+                 </div>
+               </div>
+               {/* 🔥 개별 한줄평 입력란 추가 */}
+               {op.active && (
+                 <textarea placeholder={`${op.critic === '기타' ? (op.customName || '기타') : op.critic}의 한줄평 (선택)`} value={op.comment || ''} onChange={e => handleOpinion(idx, 'comment', e.target.value)} className="w-full p-2 bg-gray-900 text-gray-300 rounded text-xs resize-none h-12 border border-gray-700 outline-none focus:border-blue-500" />
                )}
-               <div className="flex gap-1 flex-1">
-                 {/* 🔥 한 번 더 누르면 null (애매함) 상태로 되돌아갑니다 */}
-                 <button disabled={!op.active} onClick={() => handleOpinion(idx, 'isRecommend', op.isRecommend === true ? null : true)} className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors disabled:opacity-30 ${op.isRecommend === true ? 'bg-green-600 text-white shadow-md' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}>👍 추천</button>
-                 <button disabled={!op.active} onClick={() => handleOpinion(idx, 'isRecommend', op.isRecommend === false ? null : false)} className={`flex-1 py-1.5 text-[10px] font-bold rounded transition-colors disabled:opacity-30 ${op.isRecommend === false ? 'bg-red-600 text-white shadow-md' : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}>👎 비추천</button>
-               </div>
-               {/* 🔥 별점 입력란 */}
-               <div className="flex items-center gap-1 shrink-0">
-                 <span className="text-yellow-400 text-xs">★</span>
-                 <input type="number" step="0.5" min="0" max="10" value={op.rating === undefined ? 8.0 : op.rating} onChange={e => handleOpinion(idx, 'rating', Number(e.target.value))} disabled={!op.active} className="w-12 p-1 bg-gray-900 border border-gray-600 rounded text-white text-xs text-center outline-none focus:border-blue-500 disabled:opacity-50" />
-               </div>
              </div>
            ))}
          </div>
-         <textarea placeholder="신작 전체 한줄평 (선택)" value={value.comment} onChange={e => onChange({...value, comment: e.target.value})} className="w-full p-3 bg-gray-900 text-white rounded-lg text-sm resize-none h-16 border border-gray-700 outline-none focus:border-blue-500" />
+         <textarea placeholder="신작 전체 공통 한줄평 (선택)" value={value.comment} onChange={e => onChange({...value, comment: e.target.value})} className="w-full p-3 bg-gray-900 text-white rounded-lg text-sm resize-none h-16 border border-gray-700 outline-none focus:border-blue-500" />
       </div>
     );
   }
@@ -1183,7 +1187,7 @@ const AdminCinemaInputRow = ({ label, value, onChange, isNewRelease, isOther }) 
       <div className="mb-4 bg-gray-800 p-4 rounded-lg border border-gray-700">
          <div className="flex justify-between items-center mb-2">
            <h3 className="font-bold text-white text-lg">{label}</h3>
-           <button onClick={() => onChange({...value, title: '', movieId: null, poster: ''})} className="text-xs bg-gray-700 px-2 py-1 rounded">다시 검색 (삭제하려면 누르세요)</button>
+           <button onClick={() => onChange({...value, title: '', movieId: null, poster: ''})} className="text-xs bg-gray-700 px-2 py-1 rounded">다시 검색</button>
          </div>
          {isOther && (
             <div className="mb-2 flex gap-2">
@@ -1195,28 +1199,16 @@ const AdminCinemaInputRow = ({ label, value, onChange, isNewRelease, isOther }) 
            <span className="font-bold text-sm text-white">{value.title}</span>
          </div>
          
-         {/* 🚨 신작 전용: 추천/비추천 동시 선택 가능 로직 */}
-         {isNewRelease && (
-           <div className="flex gap-2 mb-2">
-             <button onClick={() => {
-               if (value.isRecommend === 'both') onChange({...value, isRecommend: false});
-               else if (value.isRecommend === false) onChange({...value, isRecommend: 'both'});
-               else if (value.isRecommend === true) alert('최소 하나의 평가는 선택해야 합니다. (비추천을 누르면 동시 선택됩니다.)'); 
-             }} className={`flex-1 py-1.5 rounded text-sm font-bold ${(value.isRecommend === true || value.isRecommend === 'both') ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-400'}`}>👍 추천</button>
-             
-             <button onClick={() => {
-               if (value.isRecommend === 'both') onChange({...value, isRecommend: true});
-               else if (value.isRecommend === true) onChange({...value, isRecommend: 'both'});
-               else if (value.isRecommend === false) alert('최소 하나의 평가는 선택해야 합니다. (추천을 누르면 동시 선택됩니다.)');
-             }} className={`flex-1 py-1.5 rounded text-sm font-bold ${(value.isRecommend === false || value.isRecommend === 'both') ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400'}`}>👎 비추천</button>
-           </div>
-         )}
-
-         {/* 기타 패널: 기존처럼 단일 선택 */}
          {!isNewRelease && (
-           <div className="flex gap-2 mb-2">
+           <div className="flex gap-2 mb-2 items-center">
              <button onClick={() => onChange({...value, isRecommend: true})} className={`flex-1 py-1.5 rounded text-sm font-bold ${value.isRecommend ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-400'}`}>👍 추천</button>
-             <button onClick={() => onChange({...value, isRecommend: false})} className={`flex-1 py-1.5 rounded text-sm font-bold ${!value.isRecommend ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400'}`}>👎 비추천</button>
+             <button onClick={() => onChange({...value, isRecommend: false})} className={`flex-1 py-1.5 rounded text-sm font-bold ${value.isRecommend === false ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-400'}`}>👎 비추천</button>
+             
+             {/* 🔥 평점 직접 입력칸 추가 */}
+             <div className="flex items-center gap-1 shrink-0 ml-2">
+               <span className="text-yellow-400 font-bold">★</span>
+               <input type="number" step="0.5" min="0" max="10" value={value.rating === undefined ? 8.0 : value.rating} onChange={e => onChange({...value, rating: Number(e.target.value)})} className="w-16 p-1.5 bg-gray-900 border border-gray-600 rounded text-white text-sm text-center outline-none focus:border-red-500" />
+             </div>
            </div>
          )}
          
@@ -1239,10 +1231,6 @@ const AdminCinemaInputRow = ({ label, value, onChange, isNewRelease, isOther }) 
                <span className="font-bold">{m.title}</span><span className="text-gray-500 text-[10px]">{m.media_type === 'tv' || m.first_air_date ? 'TV' : '영화'}</span>
              </div>
            ))}
-           <div className="p-3 bg-red-900/30 hover:bg-red-900/50 cursor-pointer text-center text-red-400 text-xs font-bold" onClick={() => {
-               onChange({...value, movieId: Date.now(), title: searchTerm, poster: `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(searchTerm)}`});
-               setSearchTerm(''); setResults([]);
-           }}>"{searchTerm}" 직접 입력하기</div>
          </div>
        )}
     </div>
