@@ -1536,7 +1536,6 @@ function MainApp() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [currentMenu, setCurrentMenu] = useState('home');
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [showNicknameModal, setShowNicknameModal] = useState(false);
@@ -1722,12 +1721,7 @@ function MainApp() {
     navigate(`/movie/${movie.id}`, { state: { movie } });
   };
 
-  const handleMenuClick = (menu) => {
-    if (location.pathname !== '/') navigate('/');
-    setCurrentMenu(menu);
-  };
-
-  const handleOpenReviewForm = (movie) => {
+   const handleOpenReviewForm = (movie) => {
     if (!dbUser) setIsLoginModalOpen(true);
     else {
       setSelectedMovieForReview(movie);
