@@ -10,6 +10,19 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, doc, getDoc, setDoc, updateDoc, where, deleteDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+// 👇👇👇 여기부터 복사해서 붙여넣으세요 👇👇👇
+declare global {
+  interface Window {
+    Kakao: any;
+  }
+}
+// 👆👆👆 여기까지 👆👆👆
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDVT-rVDkwJAUmtGqpu0JHkpYPn0E4MU2I",
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyDVT-rVDkwJAUmtGqpu0JHkpYPn0E4MU2I",
@@ -824,17 +837,40 @@ const NicknameModal = ({ isOpen, onSubmit, onCancel }) => {
 };
 
 const LoginModal = ({ isOpen, onClose }) => {
+  // 🔥 1. 카카오 초기화 세팅 추가
+  useEffect(() => {
+    if (window.Kakao && !window.Kakao.isInitialized()) {
+      window.Kakao.init(import.meta.env.VITE_KAKAO_JAVASCRIPT_KEY);
+    }
+  }, []);
+
   if (!isOpen) return null;
+
   const handleGoogleLogin = async () => {
     try { await signInWithPopup(auth, googleProvider); onClose(); } 
     catch (error) { alert("로그인 중 오류가 발생했습니다."); }
   };
+
+  // 🔥 2. 카카오 버튼 테스트용 함수 추가
+  const handleKakaoLogin = () => {
+    alert("카카오 버튼 클릭 성공! 이제 진짜 로그인 기능을 연결할 차례입니다.");
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-[80] p-4" onClick={onClose}>
       <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-sm p-6 text-center" onClick={e => e.stopPropagation()}>
         <h2 className="text-xl font-bold text-white mb-2">NETFL<span className="text-red-600">PICK</span> 로그인</h2>
         <p className="text-gray-400 text-sm mb-6">기기를 변경해도 평점과 글이 영구 보관됩니다.</p>
-        <button onClick={handleGoogleLogin} className="w-full bg-white text-gray-800 font-bold py-3 rounded-md shadow-lg">G Google로 시작하기</button>
+        
+        <button onClick={handleGoogleLogin} className="w-full bg-white text-gray-800 font-bold py-3 rounded-md shadow-lg mb-3">
+          G Google로 시작하기
+        </button>
+
+        {/* 🔥 3. 카카오 로그인 버튼 추가 */}
+        <button onClick={handleKakaoLogin} className="w-full bg-[#FEE500] text-black font-bold py-3 rounded-md shadow-lg">
+          K 카카오로 1초 만에 시작하기
+        </button>
+
         <button onClick={onClose} className="mt-4 text-xs text-gray-500 hover:text-white">닫기</button>
       </div>
     </div>
