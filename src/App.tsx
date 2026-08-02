@@ -1695,28 +1695,37 @@ function MainApp() {
         rating: (m.totalRating / m.count).toFixed(1)
       }));
 
-      // ==========================================
-      // 🔥 1단계 수정: 월별 추천작 자동 교체 로직
-      // ==========================================
-      const now = new Date();
-      const curYear = now.getFullYear();
-      const curMonth = now.getMonth();
+// ==========================================
+        // 🔥 수정: 30일 보장제 롤링 차트 및 랭킹 정렬 로직
+        // ==========================================
+        const now = new Date();
+        // 💡 오늘을 기준으로 정확히 '30일 전' 날짜를 임계선으로 잡습니다.
+        const thresholdDate = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)); 
 
-      const currentMonthMovies = [];
-      const previousMovies = [];
+        const currentMonthMovies = [];
+        const previousMovies = [];
 
-      allMovies.forEach(m => {
-        if (m.recommends > 0) { 
-          const mDate = new Date(m.latestDate);
-          if (mDate.getFullYear() === curYear && mDate.getMonth() === curMonth) {
-            currentMonthMovies.push(m);
-          } else {
-            previousMovies.push(m);
+        allMovies.forEach(m => {
+          if (m.recommends > 0) {
+            const mDate = new Date(m.latestDate);
+            // 💡 방송된 지 30일 이내면 이번 달 추천작, 30일이 넘었으면 명작 베스트로 자동 분류!
+            if (mDate >= thresholdDate) {
+              currentMonthMovies.push(m);
+            } else {
+              previousMovies.push(m);
+            }
           }
-        }
-      });
+        });
 
-      previousMovies.sort((a, b) => b.rating - a.rating);
+        // 🏆 랭킹 정렬 공식: 1.추천자수 -> 2.평점 -> 3.최신순
+        const sortRanking = (a, b) => {
+          if (b.recommends !== a.recommends) return b.recommends - a.recommends;
+          if (Number(b.rating) !== Number(a.rating)) return Number(b.rating) - Number(a.rating);
+          return new Date(b.latestDate).getTime() - new Date(a.latestDate).getTime();
+        };
+
+        currentMonthMovies.sort(sortRanking);
+        previousMovies.sort(sortRanking);
 
       const displayLatest = [
         ...currentMonthMovies,
