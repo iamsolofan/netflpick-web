@@ -1731,9 +1731,10 @@ function MainApp() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 font-sans p-6 md:p-12">
-      <header className="mb-10 flex flex-col gap-4">
+<header className="mb-10 flex flex-col gap-4">
         <div className="flex justify-between items-center w-full">
-          <h1 className="text-3xl font-extrabold text-red-600 cursor-pointer shrink-0" onClick={() => handleMenuClick('home')}>NETFL<span className="text-white">PICK</span></h1>
+          {/* 로고 클릭 시 기본 주소(/)로 이동 */}
+          <h1 className="text-3xl font-extrabold text-red-600 cursor-pointer shrink-0" onClick={() => navigate('/')}>NETFL<span className="text-white">PICK</span></h1>
           
           <div className="flex items-center gap-3 shrink-0">
             {dbUser ? (
@@ -1750,64 +1751,85 @@ function MainApp() {
 
         <div className="w-full overflow-x-auto pb-2 scrollbar-hide border-t border-gray-800 pt-4">
           <nav className="flex gap-4 md:gap-6 text-sm font-medium whitespace-nowrap w-max">
-            <button onClick={() => handleMenuClick('home')} className={`transition-colors ${currentMenu === 'home' && location.pathname === '/' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>추천 영화</button>
-            <button onClick={() => handleMenuClick('latest')} className={`transition-colors ${currentMenu === 'latest' && location.pathname === '/' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>최신 리뷰</button>
-            <button onClick={() => handleMenuClick('taste')} className={`transition-colors ${currentMenu === 'taste' && location.pathname === '/' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>나의 취향</button>
-            <button onClick={() => handleMenuClick('cinema')} className={`transition-colors ${currentMenu === 'cinema' && location.pathname === '/' ? 'text-red-400 font-bold border-b-2 border-red-400 pb-1' : 'text-gray-400 hover:text-red-300'}`}>매불쇼 시네마지옥</button>
+            {/* 각 버튼마다 고유한 URL을 할당했습니다 */}
+            <button onClick={() => navigate('/')} className={`transition-colors ${location.pathname === '/' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>추천 영화</button>
+            <button onClick={() => navigate('/latest-reviews')} className={`transition-colors ${location.pathname === '/latest-reviews' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>최신 리뷰</button>
+            <button onClick={() => navigate('/my-taste')} className={`transition-colors ${location.pathname === '/my-taste' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>나의 취향</button>
+            <button onClick={() => navigate('/cinema-hell')} className={`transition-colors ${location.pathname === '/cinema-hell' ? 'text-red-400 font-bold border-b-2 border-red-400 pb-1' : 'text-gray-400 hover:text-red-300'}`}>매불쇼 시네마지옥</button>
             <button onClick={() => navigate('/board/general')} className={`transition-colors ${location.pathname === '/board/general' ? 'text-yellow-400 font-bold border-b-2 border-yellow-400 pb-1' : 'text-gray-400 hover:text-yellow-300'}`}>전체 게시판</button>
             <button onClick={() => navigate('/board/qna')} className={`transition-colors ${location.pathname === '/board/qna' ? 'text-blue-400 font-bold border-b-2 border-blue-400 pb-1' : 'text-gray-400 hover:text-blue-300'}`}>질문/답변</button>
-            <button onClick={() => handleMenuClick('myRatings')} className={`transition-colors ${currentMenu === 'myRatings' && location.pathname === '/' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>나의 평점</button>
+            <button onClick={() => navigate('/my-ratings')} className={`transition-colors ${location.pathname === '/my-ratings' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>나의 평점</button>
 
-{/* 🔥 운영자일 때만 '회원 관리' 메뉴가 보입니다 */}
-{isAdmin && (
-  <button onClick={() => handleMenuClick('adminUsers')} className={`transition-colors ${currentMenu === 'adminUsers' && location.pathname === '/' ? 'text-red-400 font-bold border-b-2 border-red-400 pb-1' : 'text-gray-400 hover:text-red-300'}`}>👑 회원 관리</button>
-)}
+            {isAdmin && (
+              <button onClick={() => navigate('/admin-users')} className={`transition-colors ${location.pathname === '/admin-users' ? 'text-red-400 font-bold border-b-2 border-red-400 pb-1' : 'text-gray-400 hover:text-red-300'}`}>👑 회원 관리</button>
+            )}
           </nav>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto">
         <Routes>
+          {/* 1. 기본 홈 (추천 영화) - 검색 노출 O */}
           <Route path="/" element={
             <>
-              {currentMenu === 'home' && (
-                <>
-                 {/* 🔥 2단계 수정: 현재 월 자동 출력 및 제목 수정 */}
-                 <Top10Section 
-                    title={`🔥 유저들이 선택한 ${new Date().getMonth() + 1}월 추천작`} 
-                    movies={latestMovies} 
-                    onMovieClick={handleMovieClick} 
-                  />
-                  <div className="h-px bg-gray-800 my-8"></div>
-                  <Top10Section 
-                    title="👑 넷플픽 유저들이 꼽은 명작 베스트" 
-                    movies={bestMovies} 
-                    onMovieClick={handleMovieClick} 
-                  />
-                  <div className="h-px bg-gray-800 my-8"></div>
-                  <Top10Section 
-                    title="☠️ 넷플픽 유저가 뽑은 비추천 영화" 
-                    movies={worstMovies} 
-                    isWorst={true} 
-                    onMovieClick={handleMovieClick} 
-                  />
-                </>
-              )}
-              {currentMenu === 'latest' && <LatestReviewsSection latestReviews={globalLatestReviews} onMovieClick={handleMovieClick} />}
-              {currentMenu === 'taste' && (!dbUser ? <LoginRequiredMessage onLoginClick={() => setIsLoginModalOpen(true)} /> : <MyTasteSection myRatings={myRatings} allRatings={allRatings} allCinemaReviews={allCinemaReviews} onMovieClick={handleMovieClick} />)}
-              {currentMenu === 'myRatings' && (!dbUser ? <LoginRequiredMessage onLoginClick={() => setIsLoginModalOpen(true)} /> : (
-                <MyRatingsSection 
-                  myRatingsData={myRatings} 
-                  onMovieClick={handleMovieClick} 
-                  onDeleteRating={handleDeleteRating} 
-                  onEditRating={(item) => { setEditingReview(item); setIsReviewModalOpen(true); }} 
-                />
-              ))}
-              {currentMenu === 'cinema' && <CinemaHellSection isAdmin={isAdmin} onMovieClick={handleMovieClick} onRefreshGlobal={fetchAllMovieData} />}
-              {currentMenu === 'adminUsers' && isAdmin && <AdminUserSection />}
+              <Helmet><title>넷플픽 - 넷플릭스 영화 평점 및 추천</title></Helmet>
+              <Top10Section title={`🔥 유저들이 선택한 ${new Date().getMonth() + 1}월 추천작`} movies={latestMovies} onMovieClick={handleMovieClick} />
+              <div className="h-px bg-gray-800 my-8"></div>
+              <Top10Section title="👑 넷플픽 유저들이 꼽은 명작 베스트" movies={bestMovies} onMovieClick={handleMovieClick} />
+              <div className="h-px bg-gray-800 my-8"></div>
+              <Top10Section title="☠️ 넷플픽 유저가 뽑은 비추천 영화" movies={worstMovies} isWorst={true} onMovieClick={handleMovieClick} />
             </>
           } />
-          
+
+          {/* 2. 최신 리뷰 방 - 검색 노출 O */}
+          <Route path="/latest-reviews" element={
+            <>
+              <Helmet><title>넷플릭스 최신 리뷰 모음 - 넷플픽</title></Helmet>
+              <LatestReviewsSection latestReviews={globalLatestReviews} onMovieClick={handleMovieClick} />
+            </>
+          } />
+
+          {/* 3. 매불쇼 시네마지옥 방 - 검색 노출 O */}
+          <Route path="/cinema-hell" element={
+            <>
+              <Helmet><title>매불쇼 시네마지옥 넷플릭스 평점 - 넷플픽</title></Helmet>
+              <CinemaHellSection isAdmin={isAdmin} onMovieClick={handleMovieClick} onRefreshGlobal={fetchAllMovieData} />
+            </>
+          } />
+
+          {/* 4. 나의 평점 방 - 검색 노출 O (개인 데이터지만 레이아웃은 수집되도록) */}
+          <Route path="/my-ratings" element={
+            <>
+              <Helmet><title>나의 영화 평점 - 넷플픽</title></Helmet>
+              {!dbUser ? <LoginRequiredMessage onLoginClick={() => setIsLoginModalOpen(true)} /> : (
+                <MyRatingsSection myRatingsData={myRatings} onMovieClick={handleMovieClick} onDeleteRating={handleDeleteRating} onEditRating={(item) => { setEditingReview(item); setIsReviewModalOpen(true); }} />
+              )}
+            </>
+          } />
+
+          {/* 5. 나의 취향 분석 방 (noindex: 로봇 수집 금지) */}
+          <Route path="/my-taste" element={
+            <>
+              <Helmet>
+                <title>나의 취향 - 넷플픽</title>
+                <meta name="robots" content="noindex, nofollow" />
+              </Helmet>
+              {!dbUser ? <LoginRequiredMessage onLoginClick={() => setIsLoginModalOpen(true)} /> : <MyTasteSection myRatings={myRatings} allRatings={allRatings} allCinemaReviews={allCinemaReviews} onMovieClick={handleMovieClick} />}
+            </>
+          } />
+
+          {/* 6. 운영자 회원 관리 방 (noindex: 로봇 수집 금지) */}
+          <Route path="/admin-users" element={
+            <>
+              <Helmet>
+                <title>운영자 전용 - 넷플픽</title>
+                <meta name="robots" content="noindex, nofollow" />
+              </Helmet>
+              {isAdmin && <AdminUserSection />}
+            </>
+          } />
+
+          {/* 7. 기존에 설정되어 있던 게시판과 상세페이지 방들 (유지) */}
           <Route path="/movie/:id" element={<MovieDetailPage myRatings={myRatings} onOpenReviewForm={handleOpenReviewForm} />} />
           <Route path="/board/:type" element={<BoardListPage user={dbUser} onLoginRequired={() => setIsLoginModalOpen(true)} />} />
           <Route path="/board/:type/:postId" element={<BoardDetailPage user={dbUser} onLoginRequired={() => setIsLoginModalOpen(true)} />} />
