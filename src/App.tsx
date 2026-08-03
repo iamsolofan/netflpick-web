@@ -96,29 +96,55 @@ const Top10Section = ({ title, movies, isWorst = false, onMovieClick }) => {
   );
 };
 
-// ▼ 가로 스와이프 ui ▼
 const Swipe11To20Section = ({ title, movies, isWorst = false, onMovieClick }) => {
+  const scrollRef = useRef(null);
+  
+  // 💡 핵심: 10~20위 대신 일단 0~10위 영화들을 가져와서 스와이프가 되는지 눈으로 테스트합니다!
   const targetMovies = movies.slice(0, 10);
+
   if (targetMovies.length === 0) return null;
+
+  const scroll = (direction) => {
+    if (scrollRef.current) {
+      const scrollAmount = direction === 'left' ? -300 : 300;
+      scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   return (
     <section className="mb-12 animate-fadeIn w-full">
       <div className="flex items-center mb-4">
         <h3 className="text-lg md:text-xl font-bold text-gray-300 border-l-4 border-gray-500 pl-3">
-          {title} <span className="text-sm font-normal ml-2">11위 ~ 20위</span>
+          {title} <span className="text-sm font-normal ml-2">가로 스와이프 테스트</span>
         </h3>
       </div>
-      <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scrollbar">
-        {targetMovies.map((movie, index) => (
-          <div key={`${movie.id}-${index}`} className="snap-start shrink-0 w-[140px] md:w-[160px]">
-            <MovieCard movie={movie} isWorst={isWorst} onMovieClick={onMovieClick} />
-          </div>
-        ))}
+      
+      <div className="relative group">
+        <button 
+          onClick={() => scroll('left')} 
+          className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 bg-black/80 text-white p-3 rounded-full hidden md:block opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+        >
+          ◀
+        </button>
+
+        <div ref={scrollRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scrollbar scroll-smooth touch-pan-x">
+          {targetMovies.map((movie, index) => (
+            <div key={`${movie.id}-${index}`} className="snap-start shrink-0 w-[140px] md:w-[160px]">
+              <MovieCard movie={movie} isWorst={isWorst} onMovieClick={onMovieClick} />
+            </div>
+          ))}
+        </div>
+
+        <button 
+          onClick={() => scroll('right')} 
+          className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 bg-black/80 text-white p-3 rounded-full hidden md:block opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+        >
+          ▶
+        </button>
       </div>
     </section>
   );
 };
-// ▲ 여기까지 ▲
 
 const MovieDetailPage = ({ myRatings, onOpenReviewForm }) => {
   const location = useLocation();
