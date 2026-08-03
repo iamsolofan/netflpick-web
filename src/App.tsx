@@ -1751,10 +1751,11 @@ function MainApp() {
         currentMonthMovies.sort(sortRanking);
         previousMovies.sort(sortRanking);
 
-      const displayLatest = [
-        ...currentMonthMovies,
-        ...previousMovies.slice(0, Math.max(0, 10 - currentMonthMovies.length))
-      ];
+    // ✅ [수정할 코드] 10개 제한을 풀고 아래처럼 과감하게 바꿔줘!
+const displayLatest = [
+  ...currentMonthMovies,
+  ...previousMovies
+];
 
       setLatestMovies(displayLatest);
       setBestMovies([...allMovies].filter(m => m.recommends > 0).sort((a,b) => b.rating - a.rating));
