@@ -1900,17 +1900,25 @@ const displayLatest = [
 
       <main className="max-w-7xl mx-auto">
         <Routes>
-          {/* 1. 기본 홈 (추천 영화) - 검색 노출 O */}
-          <Route path="/" element={
-            <>
-              <Helmet><title>넷플픽 - 넷플릭스 영화 평점 및 추천</title></Helmet>
-              <Top10Section title={`🔥 유저들이 선택한 ${new Date().getMonth() + 1}월 추천작`} movies={latestMovies} onMovieClick={handleMovieClick} />
-              <div className="h-px bg-gray-800 my-8"></div>
-              <Top10Section title="👑 넷플픽 유저들이 꼽은 명작 베스트" movies={bestMovies} onMovieClick={handleMovieClick} />
-              <div className="h-px bg-gray-800 my-8"></div>
-              <Top10Section title="☠️ 넷플픽 유저가 뽑은 비추천 영화" movies={worstMovies} isWorst={true} onMovieClick={handleMovieClick} />
-            </>
-          } />
+         {/* 1. 기본 홈 (추천 영화) - 검색 노출 O */}
+<Route path="/" element={
+  <>
+    <Helmet><title>넷플픽 - 넷플릭스 영화 평점 및 추천</title></Helmet>
+    
+    <Top10Section title={`🔥 유저들이 선택한 ${new Date().getMonth() + 1}월 추천작`} movies={latestMovies} onMovieClick={handleMovieClick} />
+    <Swipe11To20Section title="이번 달 추천작" movies={latestMovies} onMovieClick={handleMovieClick} />
+    
+    <div className="h-px bg-gray-800 my-8"></div>
+    
+    <Top10Section title="👑 넷플픽 유저들이 꼽은 명작 베스트" movies={bestMovies} onMovieClick={handleMovieClick} />
+    <Swipe11To20Section title="명작 베스트" movies={bestMovies} onMovieClick={handleMovieClick} />
+    
+    <div className="h-px bg-gray-800 my-8"></div>
+    
+    <Top10Section title="☠️ 넷플픽 유저가 뽑은 비추천 영화" movies={worstMovies} isWorst={true} onMovieClick={handleMovieClick} />
+    <Swipe11To20Section title="비추천 영화" movies={worstMovies} isWorst={true} onMovieClick={handleMovieClick} />
+  </>
+} />
 
           {/* 2. 최신 리뷰 방 - 검색 노출 O */}
           <Route path="/latest-reviews" element={
