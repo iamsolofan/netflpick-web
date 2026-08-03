@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useR } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, useParams, Link } from 'react-router-dom';
 import { Helmet, HelmetProvider } from 'react-helmet-async';
 import { Analytics } from '@vercel/analytics/react';
@@ -92,56 +92,6 @@ const Top10Section = ({ title, movies, isWorst = false, onMovieClick }) => {
           ))}
         </div>
       )}
-    </section>
-  );
-};
-
-const Swipe11To20Section = ({ title, movies, isWorst = false, onMovieClick }) => {
-  const scrollRef = useRef(null);
-  
-  // 💡 핵심: 10~20위 대신 일단 0~10위 영화들을 가져와서 스와이프가 되는지 눈으로 테스트합니다!
-  const targetMovies = movies.slice(0, 10);
-
-  if (targetMovies.length === 0) return null;
-
-  const scroll = (direction) => {
-    if (scrollRef.current) {
-      const scrollAmount = direction === 'left' ? -300 : 300;
-      scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
-  };
-
-  return (
-    <section className="mb-12 animate-fadeIn w-full">
-      <div className="flex items-center mb-4">
-        <h3 className="text-lg md:text-xl font-bold text-gray-300 border-l-4 border-gray-500 pl-3">
-          {title} <span className="text-sm font-normal ml-2">가로 스와이프 테스트</span>
-        </h3>
-      </div>
-      
-      <div className="relative group">
-        <button 
-          onClick={() => scroll('left')} 
-          className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 bg-black/80 text-white p-3 rounded-full hidden md:block opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
-        >
-          ◀
-        </button>
-
-        <div ref={scrollRef} className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scrollbar scroll-smooth touch-pan-x">
-          {targetMovies.map((movie, index) => (
-            <div key={`${movie.id}-${index}`} className="snap-start shrink-0 w-[140px] md:w-[160px]">
-              <MovieCard movie={movie} isWorst={isWorst} onMovieClick={onMovieClick} />
-            </div>
-          ))}
-        </div>
-
-        <button 
-          onClick={() => scroll('right')} 
-          className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 bg-black/80 text-white p-3 rounded-full hidden md:block opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
-        >
-          ▶
-        </button>
-      </div>
     </section>
   );
 };
@@ -1777,11 +1727,10 @@ function MainApp() {
         currentMonthMovies.sort(sortRanking);
         previousMovies.sort(sortRanking);
 
-    // ✅ [수정할 코드] 10개 제한을 풀고 아래처럼 과감하게 바꿔줘!
-const displayLatest = [
-  ...currentMonthMovies,
-  ...previousMovies
-];
+      const displayLatest = [
+        ...currentMonthMovies,
+        ...previousMovies.slice(0, Math.max(0, 10 - currentMonthMovies.length))
+      ];
 
       setLatestMovies(displayLatest);
       setBestMovies([...allMovies].filter(m => m.recommends > 0).sort((a,b) => b.rating - a.rating));
@@ -1900,25 +1849,17 @@ const displayLatest = [
 
       <main className="max-w-7xl mx-auto">
         <Routes>
-         {/* 1. 기본 홈 (추천 영화) - 검색 노출 O */}
-<Route path="/" element={
-  <>
-    <Helmet><title>넷플픽 - 넷플릭스 영화 평점 및 추천</title></Helmet>
-    
-    <Top10Section title={`🔥 유저들이 선택한 ${new Date().getMonth() + 1}월 추천작`} movies={latestMovies} onMovieClick={handleMovieClick} />
-    <Swipe11To20Section title="이번 달 추천작" movies={latestMovies} onMovieClick={handleMovieClick} />
-    
-    <div className="h-px bg-gray-800 my-8"></div>
-    
-    <Top10Section title="👑 넷플픽 유저들이 꼽은 명작 베스트" movies={bestMovies} onMovieClick={handleMovieClick} />
-    <Swipe11To20Section title="명작 베스트" movies={bestMovies} onMovieClick={handleMovieClick} />
-    
-    <div className="h-px bg-gray-800 my-8"></div>
-    
-    <Top10Section title="☠️ 넷플픽 유저가 뽑은 비추천 영화" movies={worstMovies} isWorst={true} onMovieClick={handleMovieClick} />
-    <Swipe11To20Section title="비추천 영화" movies={worstMovies} isWorst={true} onMovieClick={handleMovieClick} />
-  </>
-} />
+          {/* 1. 기본 홈 (추천 영화) - 검색 노출 O */}
+          <Route path="/" element={
+            <>
+              <Helmet><title>넷플픽 - 넷플릭스 영화 평점 및 추천</title></Helmet>
+              <Top10Section title={`🔥 유저들이 선택한 ${new Date().getMonth() + 1}월 추천작`} movies={latestMovies} onMovieClick={handleMovieClick} />
+              <div className="h-px bg-gray-800 my-8"></div>
+              <Top10Section title="👑 넷플픽 유저들이 꼽은 명작 베스트" movies={bestMovies} onMovieClick={handleMovieClick} />
+              <div className="h-px bg-gray-800 my-8"></div>
+              <Top10Section title="☠️ 넷플픽 유저가 뽑은 비추천 영화" movies={worstMovies} isWorst={true} onMovieClick={handleMovieClick} />
+            </>
+          } />
 
           {/* 2. 최신 리뷰 방 - 검색 노출 O */}
           <Route path="/latest-reviews" element={
