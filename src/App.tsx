@@ -98,7 +98,7 @@ const Top10Section = ({ title, movies, isWorst = false, onMovieClick }) => {
 
 // ▼ 가로 스와이프 ui ▼
 const Swipe11To20Section = ({ title, movies, isWorst = false, onMovieClick }) => {
-  const targetMovies = movies.slice(10, 20);
+  const targetMovies = movies.slice(0, 10);
   if (targetMovies.length === 0) return null;
 
   return (
