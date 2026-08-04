@@ -851,7 +851,7 @@ const LoginModal = ({ isOpen, onClose }) => {
     // 네이버 초기화 (새로 추가)
     if (window.naver && !document.getElementById('naverIdLogin')?.hasChildNodes()) {
       const naverLogin = new window.naver.LoginWithNaverId({
-        clientId: "발급받은_네이버_클라이언트_ID_여기에_입력", // 🚨 네이버에서 받은 Client ID 꼭 넣기!
+        clientId: "eWsbpfhlXDRgHcD3dVwI", // 🚨 네이버에서 받은 Client ID 꼭 넣기!
         callbackUrl: "https://netflpick.com", // ✅ 실제 도메인 주소
         isPopup: true,
         loginButton: { color: "green", type: 1, height: 48 }
