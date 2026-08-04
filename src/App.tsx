@@ -840,21 +840,56 @@ const NicknameModal = ({ isOpen, onSubmit, onCancel }) => {
 };
 
 const LoginModal = ({ isOpen, onClose }) => {
+  // 1. 구글, 카카오, 네이버 초기화 세팅을 한 번에 모아두기
   useEffect(() => {
+    // 카카오 초기화 (원본 유지)
     const kakao = (window as any).Kakao;
     if (kakao && !kakao.isInitialized()) {
       kakao.init(import.meta.env.VITE_KAKAO_JAVASCRIPT_KEY);
     }
-  }, []);
+
+    // 네이버 초기화 (새로 추가)
+    if (window.naver && !document.getElementById('naverIdLogin')?.hasChildNodes()) {
+      const naverLogin = new window.naver.LoginWithNaverId({
+        clientId: "발급받은_네이버_클라이언트_ID_여기에_입력", // 🚨 네이버에서 받은 Client ID 꼭 넣기!
+        callbackUrl: "https://netflpick.com", // ✅ 실제 도메인 주소
+        isPopup: true,
+        loginButton: { color: "green", type: 1, height: 48 }
+      });
+      naverLogin.init();
+
+      window.addEventListener('load', function () {
+        naverLogin.getLoginStatus(async function (status: boolean) {
+          if (status) {
+            const naverId = naverLogin.user.getId();
+            const naverEmail = naverLogin.user.getEmail() || `naver_${naverId}@netflpick.com`;
+            const naverPassword = `netflpick_naver_${naverId}!@`;
+            try {
+              const { signInWithEmailAndPassword, createUserWithEmailAndPassword } = await import('firebase/auth');
+              try {
+                await signInWithEmailAndPassword(auth, naverEmail, naverPassword);
+              } catch (error) {
+                await createUserWithEmailAndPassword(auth, naverEmail, naverPassword);
+              }
+              onClose();
+            } catch (err) {
+              console.error("네이버 연동 에러:", err);
+            }
+          }
+        });
+      });
+    }
+  }, [onClose]);
 
   if (!isOpen) return null;
 
+  // 2. 구글 로그인 로직 (원본 완벽 유지)
   const handleGoogleLogin = async () => {
-    try { await signInWithPopup(auth, googleProvider); onClose(); } 
+    try { await signInWithPopup(auth, googleProvider); onClose(); }
     catch (error) { alert("로그인 중 오류가 발생했습니다."); }
   };
 
-  // 🔥 가짜 알림창 대신 진짜 로그인 통신 코드로 변경되었습니다!
+  // 3. 카카오 로그인 로직 (스크린샷 원본 완벽 유지)
   const handleKakaoLogin = () => {
     const kakao = (window as any).Kakao;
     if (!kakao) return alert("카카오 통신 객체를 찾을 수 없습니다.");
@@ -865,23 +900,16 @@ const LoginModal = ({ isOpen, onClose }) => {
           url: '/v2/user/me',
           success: async function (res: any) {
             const kakaoId = res.id;
-            // 카카오 이메일이 없거나 동의하지 않은 유저를 위한 넷플픽 전용 가상 이메일
             const kakaoEmail = res.kakao_account?.email || `kakao_${kakaoId}@netflpick.com`;
-            // 해킹 방지를 위한 넷플픽 전용 안전 비밀번호
             const kakaoPassword = `netflpick_kakao_${kakaoId}!@`;
-
             try {
-              // 파일 맨 위에 추가할 필요 없이 여기서 즉시 파이어베이스 기능 호출
               const { signInWithEmailAndPassword, createUserWithEmailAndPassword } = await import('firebase/auth');
-
               try {
-                // 1. 기존에 카카오로 가입한 적이 있는지 로그인 시도
                 await signInWithEmailAndPassword(auth, kakaoEmail, kakaoPassword);
               } catch (error) {
-                // 2. 가입한 적이 없다면 즉시 회원등록 처리
                 await createUserWithEmailAndPassword(auth, kakaoEmail, kakaoPassword);
               }
-              onClose(); // 성공하면 로그인 창 닫기
+              onClose();
             } catch (err) {
               alert("파이어베이스 로그인 처리 중 에러가 발생했습니다.");
               console.error(err);
@@ -889,28 +917,42 @@ const LoginModal = ({ isOpen, onClose }) => {
           },
           fail: function (error: any) {
             alert("카카오 사용자 정보를 가져오지 못했습니다.");
-          },
+          }
         });
       },
       fail: function (err: any) {
         alert("카카오 로그인을 취소하셨거나 에러가 발생했습니다.");
-      },
+      }
     });
   };
 
+  // 4. 네이버 로그인 클릭 트리거 (새로 추가)
+  const handleNaverLoginClick = () => {
+    const naverLoginButton = document.getElementById("naverIdLogin")?.firstChild as HTMLElement;
+    if (naverLoginButton) naverLoginButton.click();
+  };
+
+  // 5. 화면 UI
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-[80] p-4" onClick={onClose}>
       <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-sm p-6 text-center" onClick={e => e.stopPropagation()}>
         <h2 className="text-xl font-bold text-white mb-2">NETFL<span className="text-red-600">PICK</span> 로그인</h2>
         <p className="text-gray-400 text-sm mb-6">기기를 변경해도 평점과 글이 영구 보관됩니다.</p>
         
-        <button onClick={handleGoogleLogin} className="w-full bg-white text-gray-800 font-bold py-3 rounded-md shadow-lg mb-3">
+        <button onClick={handleGoogleLogin} className="w-full bg-white text-gray-800 font-bold py-3 rounded-md shadow-lg mb-3 hover:bg-gray-100 transition-colors">
           G Google로 시작하기
         </button>
 
-        <button onClick={handleKakaoLogin} className="w-full bg-[#FEE500] text-black font-bold py-3 rounded-md shadow-lg">
+        <button onClick={handleKakaoLogin} className="w-full bg-[#FEE500] text-black font-bold py-3 rounded-md shadow-lg mb-3 hover:bg-[#FDD800] transition-colors">
           K 카카오로 1초 만에 시작하기
         </button>
+
+        <button onClick={handleNaverLoginClick} className="w-full bg-[#03C75A] text-white font-bold py-3 rounded-md shadow-lg hover:bg-[#02b350] transition-colors">
+          N 네이버로 1초 만에 시작하기
+        </button>
+
+        {/* 숨겨진 진짜 네이버 버튼 */}
+        <div id="naverIdLogin" className="hidden"></div>
 
         <button onClick={onClose} className="mt-4 text-xs text-gray-500 hover:text-white">닫기</button>
       </div>
