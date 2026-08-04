@@ -842,6 +842,9 @@ const NicknameModal = ({ isOpen, onSubmit, onCancel }) => {
 const LoginModal = ({ isOpen, onClose }) => {
   // 1. 구글, 카카오, 네이버 초기화 세팅을 한 번에 모아두기
   useEffect(() => {
+    // 🚨 핵심 에러 해결: 모달이 안 열렸을 땐 네이버가 버튼 상자를 찾지 않도록 막음!
+    if (!isOpen) return;
+
     // 카카오 초기화 (원본 유지)
     const kakao = (window as any).Kakao;
     if (kakao && !kakao.isInitialized()) {
@@ -849,37 +852,36 @@ const LoginModal = ({ isOpen, onClose }) => {
     }
 
     // 네이버 초기화 (새로 추가)
-    if (window.naver && !document.getElementById('naverIdLogin')?.hasChildNodes()) {
+    const naverContainer = document.getElementById('naverIdLogin');
+    if (window.naver && naverContainer && !naverContainer.hasChildNodes()) {
       const naverLogin = new window.naver.LoginWithNaverId({
-        clientId: "eWsbpfhlXDRgHcD3dVwI", // 🚨 네이버에서 받은 Client ID 꼭 넣기!
+        clientId: "eWsbpfhlXDRgHcD3dVwI", // 🚨 진짜 ID 다시 넣는 거 잊지 마!
         callbackUrl: "https://netflpick.com", // ✅ 실제 도메인 주소
         isPopup: true,
         loginButton: { color: "green", type: 1, height: 48 }
       });
       naverLogin.init();
 
-      window.addEventListener('load', function () {
-        naverLogin.getLoginStatus(async function (status: boolean) {
-          if (status) {
-            const naverId = naverLogin.user.getId();
-            const naverEmail = naverLogin.user.getEmail() || `naver_${naverId}@netflpick.com`;
-            const naverPassword = `netflpick_naver_${naverId}!@`;
+      naverLogin.getLoginStatus(async function (status: boolean) {
+        if (status) {
+          const naverId = naverLogin.user.getId();
+          const naverEmail = naverLogin.user.getEmail() || `naver_${naverId}@netflpick.com`;
+          const naverPassword = `netflpick_naver_${naverId}!@`;
+          try {
+            const { signInWithEmailAndPassword, createUserWithEmailAndPassword } = await import('firebase/auth');
             try {
-              const { signInWithEmailAndPassword, createUserWithEmailAndPassword } = await import('firebase/auth');
-              try {
-                await signInWithEmailAndPassword(auth, naverEmail, naverPassword);
-              } catch (error) {
-                await createUserWithEmailAndPassword(auth, naverEmail, naverPassword);
-              }
-              onClose();
-            } catch (err) {
-              console.error("네이버 연동 에러:", err);
+              await signInWithEmailAndPassword(auth, naverEmail, naverPassword);
+            } catch (error) {
+              await createUserWithEmailAndPassword(auth, naverEmail, naverPassword);
             }
+            onClose();
+          } catch (err) {
+            console.error("네이버 연동 에러:", err);
           }
-        });
+        }
       });
     }
-  }, [onClose]);
+  }, [isOpen, onClose]); // 🚨 모달이 열릴 때만 작동하도록 isOpen 추가
 
   if (!isOpen) return null;
 
@@ -889,7 +891,7 @@ const LoginModal = ({ isOpen, onClose }) => {
     catch (error) { alert("로그인 중 오류가 발생했습니다."); }
   };
 
-  // 3. 카카오 로그인 로직 (스크린샷 원본 완벽 유지)
+  // 3. 카카오 로그인 로직 (원본 완벽 유지)
   const handleKakaoLogin = () => {
     const kakao = (window as any).Kakao;
     if (!kakao) return alert("카카오 통신 객체를 찾을 수 없습니다.");
@@ -926,7 +928,7 @@ const LoginModal = ({ isOpen, onClose }) => {
     });
   };
 
-  // 4. 네이버 로그인 클릭 트리거 (새로 추가)
+  // 4. 네이버 로그인 클릭 트리거
   const handleNaverLoginClick = () => {
     const naverLoginButton = document.getElementById("naverIdLogin")?.firstChild as HTMLElement;
     if (naverLoginButton) naverLoginButton.click();
