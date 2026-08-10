@@ -347,8 +347,13 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
     if (!myRatings || myRatings.length === 0) return [];
 
     const profiles = {}; 
+    const myRatingsMap = new Map();
     
-    // 🚨 'both' 일 경우 likes와 dislikes 배열 양쪽에 모두 넣어서 일치도 평가
+    // 나의 평점 정보를 쉽게 찾기 위해 Map으로 정리
+    myRatings.forEach(r => myRatingsMap.set(r.id, r));
+    const myRatedIds = new Set(myRatingsMap.keys());
+    
+    // 일반 유저 프로필 수집
     allRatings.forEach(r => {
       if (r.uid === myRatings[0].uid) return; 
       if (!profiles[r.uid]) profiles[r.uid] = { id: r.uid, name: r.nickname, avatar: '👤', likes: [], dislikes: [], ratedIds: new Set() };
@@ -361,9 +366,14 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
       else profiles[r.uid].dislikes.push(r);
     });
 
+    // 패널(평론가/배우 등) 프로필 수집
     allCinemaReviews.forEach(r => {
       const criticId = `critic_${r.reviewerName}`;
-      if (!profiles[criticId]) profiles[criticId] = { id: criticId, name: `${r.reviewerName} (평론가)`, avatar: '🎬', likes: [], dislikes: [], ratedIds: new Set() };
+      
+      // 🔥 태항호 배우 처리 및 직업 세분화
+      const role = r.reviewerName === '태항호' ? '배우' : (r.reviewerName === '최욱' ? '방송인' : '평론가');
+      
+      if (!profiles[criticId]) profiles[criticId] = { id: criticId, name: `${r.reviewerName} (${role})`, avatar: '🎬', likes: [], dislikes: [], ratedIds: new Set() };
       profiles[criticId].ratedIds.add(r.id);
       
       if (r.isRecommend === 'both') {
@@ -373,10 +383,6 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
       else profiles[criticId].dislikes.push(r);
     });
 
-    const myLikes = new Set(myRatings.filter(r => r.isRecommend === true || r.isRecommend === 'both').map(r => r.id));
-    const myDislikes = new Set(myRatings.filter(r => r.isRecommend === false || r.isRecommend === 'both').map(r => r.id));
-    const myRatedIds = new Set(myRatings.map(r => r.id));
-
     const results = [];
 
     Object.values(profiles).forEach(profile => {
@@ -384,33 +390,51 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
        if (commonIds.length === 0) return; 
 
        let agreements = 0;
-       const commonLikedMovies = [];
-       const commonDislikedMovies = [];
+       const commonLikes = [];
+       const commonDislikes = [];
+       const commonDisagreements = []; // 🔥 엇갈린 영화 추가!
 
        commonIds.forEach(id => {
-          const iLiked = myLikes.has(id);
-          const iDisliked = myDislikes.has(id);
+          const myR = myRatingsMap.get(id);
+          const myVote = myR.isRecommend === 'both' ? '🤔' : (myR.isRecommend ? '👍' : '👎');
+          
+          const theirR = profile.likes.find(m => m.id === id) || profile.dislikes.find(m => m.id === id);
+          const theirVote = theirR.isRecommend === 'both' ? '🤔' : (theirR.isRecommend ? '👍' : '👎');
+
+          const movieInfo = {
+              id: id, title: theirR.title, poster: theirR.poster,
+              myVote: myVote, myRating: myR.rating || 0,
+              theirVote: theirVote, theirRating: theirR.rating || 0
+          };
+
+          const iLiked = myR.isRecommend === true || myR.isRecommend === 'both';
+          const iDisliked = myR.isRecommend === false || myR.isRecommend === 'both';
           const theyLiked = profile.likes.some(m => m.id === id);
           const theyDisliked = profile.dislikes.some(m => m.id === id);
 
           if (iLiked && theyLiked) {
              agreements++;
-             commonLikedMovies.push(profile.likes.find(m => m.id === id));
+             commonLikes.push(movieInfo);
           } else if (iDisliked && theyDisliked) {
              agreements++;
-             commonDislikedMovies.push(profile.dislikes.find(m => m.id === id));
+             commonDislikes.push(movieInfo);
+          } else {
+             // 🔥 평가가 엇갈린 경우
+             commonDisagreements.push(movieInfo);
           }
        });
 
        const matchRate = Math.round((agreements / commonIds.length) * 100);
        
-       if (agreements > 0) {
+       if (agreements > 0 || commonDisagreements.length > 0) {
          results.push({
            ...profile,
            matchRate,
            commonCount: commonIds.length,
-           commonLikes: commonLikedMovies,
-           commonDislikes: commonDislikedMovies
+           agreements,
+           commonLikes,
+           commonDislikes,
+           commonDisagreements
          });
        }
     });
@@ -421,6 +445,26 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
     }).slice(0, 5);
 
   }, [myRatings, allRatings, allCinemaReviews]);
+
+  // 🎬 영화 리스트 렌더링 헬퍼 함수 (디자인 깔끔하게 분리)
+  const renderMovieList = (movies) => (
+      <div className="flex flex-col gap-3">
+          {movies.map((m, i) => (
+              <div key={i} className="flex items-center gap-4 bg-gray-900 p-3 rounded-lg border border-gray-700 cursor-pointer hover:border-gray-500 transition-colors" onClick={(e) => { e.stopPropagation(); onMovieClick(m); }}>
+                  <img src={m.poster} alt={m.title} className="w-12 h-16 object-cover rounded shadow-md shrink-0" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(m.title)}`; }} />
+                  <div className="flex flex-col flex-1 overflow-hidden">
+                      <span className="text-white font-bold text-sm mb-1 truncate">{m.title}</span>
+                      <div className="text-xs text-gray-400 bg-gray-800 p-2 rounded inline-block w-fit border border-gray-700">
+                          {/* 🔥 내 평점과 상대 평점 직관적 비교 UI */}
+                          <span className="font-semibold text-gray-200">나:</span> {m.myVote} ({Number(m.myRating).toFixed(1)}점)
+                          <span className="mx-2 text-gray-600">|</span>
+                          <span className="font-semibold text-gray-200">상대:</span> {m.theirVote} ({Number(m.theirRating).toFixed(1)}점)
+                      </div>
+                  </div>
+              </div>
+          ))}
+      </div>
+  );
 
   return (
     <section className="animate-fadeIn">
@@ -439,43 +483,46 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
               <div key={user.id} className={`bg-gray-800 border transition-all rounded-xl p-6 relative shadow-lg ${isExpanded ? 'border-red-500' : 'border-gray-700'}`}>
                 <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpandedUserId(isExpanded ? null : user.id)}>
                   <div className="flex items-center gap-4">
-                    <span className="bg-red-600 text-white font-bold px-3 py-1 rounded-lg text-sm">{idx + 1}위</span>
-                    <span className="text-3xl">{user.avatar}</span>
+                    <span className="bg-red-600 text-white font-bold px-3 py-1 rounded-lg text-sm shrink-0">{idx + 1}위</span>
+                    <span className="text-3xl hidden sm:inline">{user.avatar}</span>
                     <div>
                        <h3 className="text-lg font-bold text-white">{user.name}</h3>
-                       <p className="text-xs text-gray-500">함께 평가한 영화 {user.commonCount}편 중 {user.commonLikes.length + user.commonDislikes.length}편 일치</p>
+                       <p className="text-xs text-gray-500 mt-1">
+                          {/* 🔥 괄호 안에 (일치 편수 / 총 평가 편수) 표기 */}
+                          (일치 {user.agreements}편 / 총 {user.commonCount}편)
+                       </p>
                     </div>
                   </div>
-                  <div className="text-red-400 font-extrabold text-xl">일치율 {user.matchRate}%</div>
+                  <div className="text-right shrink-0">
+                     <div className="text-red-400 font-extrabold text-xl">일치율 {user.matchRate}%</div>
+                  </div>
                 </div>
+                
                 {isExpanded && (
-                  <div className="mt-6 pt-6 border-t border-gray-700">
+                  <div className="mt-6 pt-6 border-t border-gray-700 flex flex-col gap-6">
+                    
                     {user.commonLikes.length > 0 && (
-                      <div className="mb-4">
-                        <h4 className="text-sm font-semibold text-gray-300 mb-3"><span className="text-green-400">👍</span> 통했네 통했어! 같이 추천한 영화</h4>
-                        <div className="flex flex-wrap gap-4">
-                          {user.commonLikes.map((m, i) => (
-                            <div key={i} className="flex flex-col items-center w-20">
-                              <img src={m.poster} onClick={(e) => { e.stopPropagation(); onMovieClick(m); }} alt="" className="w-20 h-28 object-cover rounded shadow-md mb-1 bg-gray-700 cursor-pointer hover:opacity-80 transition-opacity" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(m.title)}`; }} />
-                              <span className="text-[10px] text-gray-200 truncate w-full text-center">{m.title}</span>
-                            </div>
-                          ))}
-                        </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center"><span className="text-green-400">👍</span> 통했네 통했어! 같이 추천한 영화</h4>
+                        {renderMovieList(user.commonLikes)}
                       </div>
                     )}
+                    
                     {user.commonDislikes.length > 0 && (
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-300 mb-3"><span className="text-red-400">👎</span> 같이 비추천한 영화</h4>
-                        <div className="flex flex-wrap gap-4">
-                          {user.commonDislikes.map((m, i) => (
-                            <div key={i} className="flex flex-col items-center w-20">
-                              <img src={m.poster} onClick={(e) => { e.stopPropagation(); onMovieClick(m); }} alt="" className="w-20 h-28 object-cover rounded shadow-md mb-1 bg-gray-700 cursor-pointer hover:opacity-80 transition-opacity" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(m.title)}`; }} />
-                              <span className="text-[10px] text-gray-200 truncate w-full text-center">{m.title}</span>
-                            </div>
-                          ))}
-                        </div>
+                        <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center"><span className="text-red-400">👎</span> 같이 비추천한 영화</h4>
+                        {renderMovieList(user.commonDislikes)}
                       </div>
                     )}
+
+                    {/* 🔥 엇갈린 영화 섹션 새롭게 추가! */}
+                    {user.commonDisagreements.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center"><span className="text-yellow-400">🔀</span> 서로 의견이 엇갈린 영화</h4>
+                        {renderMovieList(user.commonDisagreements)}
+                      </div>
+                    )}
+
                   </div>
                 )}
               </div>
