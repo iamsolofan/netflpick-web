@@ -109,3 +109,12 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+/* 가로 스와이프용 스크롤바 숨기기 (스와이프 기능은 유지) */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* 인터넷 익스플로러, 엣지용 */
+  scrollbar-width: none; /* 파이어폭스용 */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* 크롬, 사파리, 아이폰, 안드로이드 모바일 브라우저용 */
+}
