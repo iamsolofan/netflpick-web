@@ -392,7 +392,7 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
        let agreements = 0;
        const commonLikes = [];
        const commonDislikes = [];
-       const commonDisagreements = []; // 🔥 엇갈린 영화 추가!
+       const commonDisagreements = []; 
 
        commonIds.forEach(id => {
           const myR = myRatingsMap.get(id);
@@ -419,7 +419,7 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
              agreements++;
              commonDislikes.push(movieInfo);
           } else {
-             // 🔥 평가가 엇갈린 경우
+             // 평가가 엇갈린 경우
              commonDisagreements.push(movieInfo);
           }
        });
@@ -446,16 +446,17 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
 
   }, [myRatings, allRatings, allCinemaReviews]);
 
-  // 🎬 영화 리스트 렌더링 헬퍼 함수 (디자인 깔끔하게 분리)
+  // 🎬 영화 리스트 렌더링 헬퍼 함수 (디자인 수정 반영)
   const renderMovieList = (movies) => (
       <div className="flex flex-col gap-3">
           {movies.map((m, i) => (
               <div key={i} className="flex items-center gap-4 bg-gray-900 p-3 rounded-lg border border-gray-700 cursor-pointer hover:border-gray-500 transition-colors" onClick={(e) => { e.stopPropagation(); onMovieClick(m); }}>
-                  <img src={m.poster} alt={m.title} className="w-12 h-16 object-cover rounded shadow-md shrink-0" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(m.title)}`; }} />
+                  {/* 🔥 포스터 크기 키움 (w-12 h-16 -> w-14 h-20) */}
+                  <img src={m.poster} alt={m.title} className="w-14 h-20 object-cover rounded shadow-md shrink-0" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(m.title)}`; }} />
                   <div className="flex flex-col flex-1 overflow-hidden">
-                      <span className="text-white font-bold text-sm mb-1 truncate">{m.title}</span>
+                      {/* 🔥 영화 제목 폰트 키움 (text-sm -> text-base) */}
+                      <span className="text-white font-bold text-base mb-1.5 truncate">{m.title}</span>
                       <div className="text-xs text-gray-400 bg-gray-800 p-2 rounded inline-block w-fit border border-gray-700">
-                          {/* 🔥 내 평점과 상대 평점 직관적 비교 UI */}
                           <span className="font-semibold text-gray-200">나:</span> {m.myVote} ({Number(m.myRating).toFixed(1)}점)
                           <span className="mx-2 text-gray-600">|</span>
                           <span className="font-semibold text-gray-200">상대:</span> {m.theirVote} ({Number(m.theirRating).toFixed(1)}점)
@@ -473,7 +474,7 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
       {matchingUsers.length === 0 ? (
         <div className="bg-gray-800 p-10 rounded-xl text-center border border-gray-700">
           <p className="text-gray-400 mb-2">아직 겹치는 평가를 남긴 유저나 평론가가 없습니다.</p>
-          <p className="text-gray-500 text-sm">더 많은 영화에 평점을 남겨 취향이 맞는 사람을 찾아보세요!</p>
+          <p className="text-gray-500 text-sm">더 훨씬 많은 영화에 평점을 남겨 취향이 맞는 사람을 찾아보세요!</p>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -487,14 +488,13 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
                     <span className="text-3xl hidden sm:inline">{user.avatar}</span>
                     <div>
                        <h3 className="text-lg font-bold text-white">{user.name}</h3>
-                       <p className="text-xs text-gray-500 mt-1">
-                          {/* 🔥 괄호 안에 (일치 편수 / 총 평가 편수) 표기 */}
-                          (일치 {user.agreements}편 / 총 {user.commonCount}편)
-                       </p>
+                       {/* 💡 기존에 있던 (일치/총) 텍스트를 여기서 지우고 오른쪽으로 옮겼습니다 */}
                     </div>
                   </div>
                   <div className="text-right shrink-0">
                      <div className="text-red-400 font-extrabold text-xl">일치율 {user.matchRate}%</div>
+                     {/* 🔥 일치 편수 텍스트 위치 이동 & 크기, 밝기, 굵기 상향 */}
+                     <div className="text-gray-300 font-bold text-sm mt-1">(일치 {user.agreements}편 / 총 {user.commonCount}편)</div>
                   </div>
                 </div>
                 
@@ -515,7 +515,6 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
                       </div>
                     )}
 
-                    {/* 🔥 엇갈린 영화 섹션 새롭게 추가! */}
                     {user.commonDisagreements.length > 0 && (
                       <div>
                         <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center"><span className="text-yellow-400">🔀</span> 서로 의견이 엇갈린 영화</h4>
