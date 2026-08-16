@@ -1346,13 +1346,14 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
   const [jeon, setJeon] = useState({ ...initialFormState });
   const [liner, setLiner] = useState({ ...initialFormState });
   const [none, setNone] = useState({ ...initialFormState });
-  const [guests, setGuests] = useState([
-    { id: Date.now(), name: '', job: '평론가', movie: null, rating: null, comment: '' }
-  ]);
-  
-  const addGuest = () => {
-    setGuests([...guests, { id: Date.now(), name: '', job: '평론가', movie: null, rating: null, comment: '' }]);
-  };
+// 기존 컴포넌트가 요구하는 title, isRecommend 등을 포함하기 위해 ...initialFormState를 사용합니다.
+const [guests, setGuests] = useState([
+  { id: Date.now(), name: '', job: '평론가', ...initialFormState }
+]);
+
+const addGuest = () => {
+  setGuests([...guests, { id: Date.now(), name: '', job: '평론가', ...initialFormState }]);
+};
   
   const removeGuest = (id) => {
     setGuests(guests.filter(guest => guest.id !== id));
