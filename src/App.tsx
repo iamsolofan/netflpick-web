@@ -47,7 +47,7 @@ const getRecentFridayKST = () => {
   return kst.toISOString().split('T')[0];
 };
 
-const CINEMA_HELL_PANELS = ['전체', '신작', '전찬일', '라이너', '거의없다', '최광희', '최욱', '기타'];
+const CINEMA_HELL_PANELS = ['전체', '신작', '전찬일', '라이너', '거의없다', '기타'];
 
 // ==========================================
 // 3. UI 컴포넌트 모음
@@ -370,8 +370,7 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
     allCinemaReviews.forEach(r => {
       const criticId = `critic_${r.reviewerName}`;
       
-      // 🔥 태항호 배우 처리 및 직업 세분화
-      const role = r.reviewerName === '태항호' ? '배우' : (r.reviewerName === '최욱' ? '방송인' : '평론가');
+      const role = r.reviewerJob || '평론가';
       
       if (!profiles[criticId]) profiles[criticId] = { id: criticId, name: `${r.reviewerName} (${role})`, avatar: '🎬', likes: [], dislikes: [], ratedIds: new Set() };
       profiles[criticId].ratedIds.add(r.id);
@@ -1347,8 +1346,23 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
   const [jeon, setJeon] = useState({ ...initialFormState });
   const [liner, setLiner] = useState({ ...initialFormState });
   const [none, setNone] = useState({ ...initialFormState });
-  const [choiG, setChoiG] = useState({ ...initialFormState });
-  const [choiW, setChoiW] = useState({ ...initialFormState });
+  const [guests, setGuests] = useState([
+    { id: Date.now(), name: '', job: '평론가', movie: null, rating: null, comment: '' }
+  ]);
+  
+  const addGuest = () => {
+    setGuests([...guests, { id: Date.now(), name: '', job: '평론가', movie: null, rating: null, comment: '' }]);
+  };
+  
+  const removeGuest = (id) => {
+    setGuests(guests.filter(guest => guest.id !== id));
+  };
+  
+  const handleGuestChange = (id, field, value) => {
+    setGuests(guests.map(guest => 
+      guest.id === id ? { ...guest, [field]: value } : guest
+    ));
+  };
   const [other, setOther] = useState({ ...initialFormState, otherName: '직접입력', customName: '' });
 
   useEffect(() => {
@@ -1365,8 +1379,6 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
           else if (r.panelName === '전찬일') j = mappedData;
           else if (r.panelName === '라이너') l = mappedData;
           else if (r.panelName === '거의없다') n = mappedData;
-          else if (r.panelName === '최광희') cG = mappedData;
-          else if (r.panelName === '최욱') cW = mappedData;
           else if (r.panelName === '기타') {
             o = { ...mappedData, otherName: '직접입력', customName: r.reviewerName };
           }
@@ -1382,7 +1394,7 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
   const handleSubmit = async () => {
     const entries = [
       { panel: '신작', data: newRelease }, { panel: '전찬일', data: jeon }, { panel: '라이너', data: liner },
-      { panel: '거의없다', data: none }, { panel: '최광희', data: choiG }, { panel: '최욱', data: choiW }, { panel: '기타', data: other },
+      { panel: '거의없다', data: none }, { panel: '기타', data: other },
     ];
 
     let hasData = false;
@@ -1438,9 +1450,58 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
           <AdminCinemaInputRow label="[전찬일]" value={jeon} onChange={setJeon} />
           <AdminCinemaInputRow label="[라이너]" value={liner} onChange={setLiner} />
           <AdminCinemaInputRow label="[거의없다]" value={none} onChange={setNone} />
-          <AdminCinemaInputRow label="[최광희]" value={choiG} onChange={setChoiG} />
-          <AdminCinemaInputRow label="[최욱]" value={choiW} onChange={setChoiW} />
-          <AdminCinemaInputRow label="[기타 게스트]" value={other} onChange={setOther} isOther={true} />
+{/* 동적 기타 게스트 입력란 시작 */}
+{guests.map((guest, index) => (
+  <div key={guest.id} className="mt-4 p-4 bg-gray-800 rounded-lg border border-gray-700">
+    <div className="flex justify-between items-center mb-2">
+      <h3 className="text-white font-bold text-sm">[기타 게스트 {index + 1}]</h3>
+      <button onClick={() => removeGuest(guest.id)} className="text-red-500 text-xs hover:text-red-400">
+        삭제 ✕
+      </button>
+    </div>
+
+    {/* 이름 입력칸 + 직업 드롭다운 */}
+    <div className="flex gap-2 mb-3">
+      <input 
+        type="text" 
+        placeholder="이름 직접 입력 (예: 황석정)"
+        value={guest.name}
+        onChange={(e) => handleGuestChange(guest.id, 'name', e.target.value)}
+        className="flex-1 bg-gray-900 text-white p-2 border border-gray-700 rounded text-sm focus:outline-none focus:border-red-500"
+      />
+      <select 
+        value={guest.job}
+        onChange={(e) => handleGuestChange(guest.id, 'job', e.target.value)}
+        className="w-1/3 bg-gray-900 text-white p-2 border border-gray-700 rounded text-sm focus:outline-none focus:border-red-500"
+      >
+        <option value="평론가">평론가</option>
+        <option value="배우">배우</option>
+        <option value="가수">가수</option>
+        <option value="방송인">방송인</option>
+        <option value="감독">감독</option>
+        <option value="기자">기자</option>
+      </select>
+    </div>
+
+    {/* 기존의 작품 검색 및 별점 컴포넌트 재사용 */}
+    <AdminCinemaInputRow 
+      label="" 
+      value={guest} 
+      onChange={(newValue) => {
+        setGuests(guests.map(g => g.id === guest.id ? { ...g, ...newValue } : g));
+      }} 
+    />
+  </div>
+))}
+
+{/* 게스트 추가 버튼 */}
+<button 
+  onClick={addGuest}
+  className="w-full mt-3 py-2 border border-dashed border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 font-bold rounded-lg transition text-sm"
+>
+  + 기타 게스트 폼 추가하기
+</button>
+{/* 동적 기타 게스트 입력란 끝 */}
         </div>
         
         <div className="mt-6 flex gap-3 shrink-0">
@@ -1559,10 +1620,7 @@ const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
     return counts;
   }, [cinemaReviews]);
 
-  const visiblePanels = CINEMA_HELL_PANELS.filter(panel => {
-    if (panel === '최광희' || panel === '최욱') return (panelCounts[panel] || 0) >= 3;
-    return true;
-  });
+  const visiblePanels = CINEMA_HELL_PANELS;
 
   const filteredReviews = activePanel === '전체' ? [] : cinemaReviews.filter(r => r.panelName === activePanel).sort((a,b) => b.rating - a.rating);
 
