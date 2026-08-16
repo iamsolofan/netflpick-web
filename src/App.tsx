@@ -1492,14 +1492,16 @@ const reviewObj = {
 // 3. (핵심) 혹시라도 객체 안에 undefined가 남아있다면 파이어베이스가 튕겨내므로 강제로 싹 지워주는 안전장치
 Object.keys(reviewObj).forEach(key => reviewObj[key] === undefined && delete reviewObj[key]);
             
-            if (entry.data.docId) {
-              await updateDoc(doc(db, "cinema_reviews", entry.data.docId), reviewObj);
-            } else {
-              await addDoc(collection(db, "cinema_reviews"), reviewObj);
-            }
-          } else if (entry.data.docId) {
-            await deleteDoc(doc(db, "cinema_reviews", entry.data.docId));
-          }
+if (entry.data.docId) {
+  // docId를 강제로 문자열로 변환하여 에러 원천 차단!
+  await updateDoc(doc(db, "cinema_reviews", String(entry.data.docId)), reviewObj);
+} else {
+  await addDoc(collection(db, "cinema_reviews"), reviewObj);
+}
+} else if (entry.data.docId) {
+// 삭제할 때도 마찬가지로 문자열로 감싸주기!
+await deleteDoc(doc(db, "cinema_reviews", String(entry.data.docId)));
+}
         }
       }
       if (!hasData && !editData) return alert("등록할 작품 제목을 최소 하나 이상 검색/입력해주세요.");
