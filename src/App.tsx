@@ -1661,8 +1661,7 @@ const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
       const q = query(collection(db, "cinema_reviews"), orderBy("broadcastDate", "desc"));
       const snap = await getDocs(q);
       const fetched = [];
-      snap.forEach(doc => fetched.push({ dbId: doc.id, ...doc.data() }));
-      setCinemaReviews(fetched);
+      snap.forEach(doc => fetched.push({ ...doc.data(), docId: doc.id }));      setCinemaReviews(fetched);
       if (onRefreshGlobal) onRefreshGlobal();
     } catch (e) {
       console.error("시네마지옥 기록 로딩 실패:", e);
