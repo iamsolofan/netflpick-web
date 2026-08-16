@@ -1474,12 +1474,22 @@ const addGuest = () => {
 // 1. 이름이 비어있으면 '기타 게스트'라는 기본값을 주어 에러 방지
 const finalPanelName = entry.panel === '기타' ? (entry.data.name || entry.data.customName || '기타 게스트') : entry.panel;
 
+// ⭐ [추가] 신작일 경우 패널들의 평점을 모아 '평균 평점' 계산하기!
+let finalRating = entry.data.rating !== undefined ? Number(entry.data.rating) : 8.0;
+if (entry.panel === '신작' && entry.data.opinions) {
+  const activeOps = entry.data.opinions.filter(o => o.active); // 체크된 패널만 모으기
+  if (activeOps.length > 0) {
+    const sum = activeOps.reduce((acc, op) => acc + Number(op.rating || 0), 0);
+    finalRating = Math.round((sum / activeOps.length) * 10) / 10; // 소수점 첫째 자리까지 반올림
+  }
+}
+
 // 2. 파이어베이스 에러 방지를 위해 모든 항목에 꼼꼼하게 기본값(||) 세팅
 const reviewObj = {
   id: entry.data.movieId || Date.now() + Math.random(),
   title: entry.data.title || '', 
   poster: entry.data.poster || '',
-  rating: entry.data.rating !== undefined ? entry.data.rating : 8.0,
+  rating: finalRating, // ⭐ 강제 8.0 대신 위에서 계산된 '평균 평점'이 들어가도록 수정!
   isRecommend: entry.panel === '신작' ? true : (entry.data.isRecommend !== undefined ? entry.data.isRecommend : null),
   opinions: entry.panel === '신작' ? (entry.data.opinions || []) : null,
   comment: entry.data.comment || '',
