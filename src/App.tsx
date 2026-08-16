@@ -1206,8 +1206,27 @@ const AdminNewReleaseRow = ({ label, value, onChange }) => {
                <div className="flex items-center gap-2">
                  <input type="checkbox" checked={op.active} onChange={e => handleOpinion(idx, 'active', e.target.checked)} className="w-4 h-4 cursor-pointer accent-blue-500 shrink-0" />
                  {op.critic === '기타' ? (
-                   <input type="text" placeholder="기타 이름" value={op.customName} onChange={e => handleOpinion(idx, 'customName', e.target.value)} disabled={!op.active} className="w-16 p-1.5 bg-gray-700 text-white text-[10px] font-bold border border-gray-600 rounded outline-none focus:border-blue-500 disabled:opacity-50" />
-                 ) : (
+                  <div className="flex gap-2">
+        <input 
+          type="text" 
+          placeholder="이름 직접 입력" 
+          value={op.customName || ''} 
+          onChange={e => handleOpinion(idx, 'customName', e.target.value)}
+          className="w-24 bg-gray-900 text-white p-1 border border-gray-700 rounded text-xs focus:outline-none focus:border-red-500"
+        />
+        <select 
+          value={op.job || '평론가'}
+          onChange={e => handleOpinion(idx, 'job', e.target.value)}
+          className="w-20 bg-gray-900 text-white p-1 border border-gray-700 rounded text-xs focus:outline-none focus:border-red-500"
+        >
+          <option value="평론가">평론가</option>
+          <option value="배우">배우</option>
+          <option value="가수">가수</option>
+          <option value="방송인">방송인</option>
+          <option value="감독">감독</option>
+          <option value="기자">기자</option>
+        </select>
+      </div>                 ) : (
                    <span className={`text-xs w-12 font-bold ${op.active ? 'text-white' : 'text-gray-500'}`}>{op.critic}</span>
                  )}
                  <div className="flex gap-1 flex-1">
