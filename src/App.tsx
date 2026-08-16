@@ -1414,8 +1414,7 @@ const addGuest = () => {
   
         editData.forEach(r => {
           // DB에서 불러온 데이터를 매핑
-          const mappedData = { title: r.title, poster: r.poster, isRecommend: r.isRecommend, comment: r.comment, docId: r.id, rating: r.rating || 8.0 };
-  
+          const mappedData = { title: r.title, poster: r.poster, isRecommend: r.isRecommend, comment: r.comment, docId: r.docId, rating: r.rating || 8.0 };  
           if (r.panelName === '신작') nR = { ...mappedData, opinions: r.opinions || nR.opinions };
           else if (r.panelName === '전찬일') j = mappedData;
           else if (r.panelName === '라이너') l = mappedData;
