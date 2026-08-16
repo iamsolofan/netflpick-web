@@ -1434,9 +1434,17 @@ const addGuest = () => {
 
   const handleSubmit = async () => {
     const entries = [
-      { panel: '신작', data: newRelease }, { panel: '전찬일', data: jeon }, { panel: '라이너', data: liner },
-      { panel: '거의없다', data: none }, { panel: '기타', data: other },
+      { panel: '신작', data: newRelease }, 
+      { panel: '전찬일', data: jeon }, 
+      { panel: '라이너', data: liner },
+      { panel: '거의없다', data: none }
     ];
+  
+    guests.forEach(guest => {
+      if (guest.title) { 
+        entries.push({ panel: '기타', data: guest });
+      }
+    });
 
     let hasData = false;
     try {
@@ -1449,11 +1457,14 @@ const addGuest = () => {
             const reviewObj = {
               id: entry.data.movieId || Date.now() + Math.random(),
               title: entry.data.title, poster: entry.data.poster,
-              rating: entry.data.rating !== undefined ? entry.data.rating : 8.0, // 🔥 사용자가 직접 바꾼 별점 저장
+              rating: entry.data.rating !== undefined ? entry.data.rating : 8.0,
               isRecommend: entry.panel === '신작' ? true : entry.data.isRecommend,
-              opinions: entry.panel === '신작' ? entry.data.opinions : null, 
-              comment: entry.data.comment || '', 
-              panelName: entry.panel, reviewerName: finalPanelName, broadcastDate: date
+              opinions: entry.panel === '신작' ? entry.data.opinions : null,
+              comment: entry.data.comment || '',
+              panelName: entry.panel, 
+              reviewerName: finalPanelName, 
+              reviewerJob: entry.data.job || '평론가', // ⭐️ 이 줄이 추가되어 직업이 저장됩니다!
+              broadcastDate: date
             };
             
             if (entry.data.docId) {
