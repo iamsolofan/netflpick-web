@@ -1370,24 +1370,46 @@ const addGuest = () => {
     if (isOpen) {
       if (editData && editData.length > 0) {
         setDate(editData[0].broadcastDate);
-        let nR = { ...initialNewReleaseState }, j = { ...initialFormState }, l = { ...initialFormState }, n = { ...initialFormState }, cG = { ...initialFormState }, cW = { ...initialFormState }, o = { ...initialFormState, otherName: '직접입력', customName: '' };
+        let nR = { ...initialNewReleaseState }, j = { ...initialFormState }, l = { ...initialFormState }, n = { ...initialFormState };
         
+        // ⭐️ 기존 데이터를 담을 빈 배열 준비
+        let loadedGuests = []; 
+  
         editData.forEach(r => {
-          // 🔥 DB에서 평점(rating) 불러오기 적용
-          const mappedData = { title: r.title, poster: r.poster, isRecommend: r.isRecommend, comment: r.comment, movieId: r.id, docId: r.dbId, rating: r.rating !== undefined ? r.rating : 8.0 };
-          
-          if (r.panelName === '신작') nR = { ...mappedData, opinions: r.opinions || initialNewReleaseState.opinions };
+          // DB에서 불러온 데이터를 매핑
+          const mappedData = { title: r.title, poster: r.poster, isRecommend: r.isRecommend, comment: r.comment, docId: r.id, rating: r.rating || 8.0 };
+  
+          if (r.panelName === '신작') nR = { ...mappedData, opinions: r.opinions || nR.opinions };
           else if (r.panelName === '전찬일') j = mappedData;
           else if (r.panelName === '라이너') l = mappedData;
           else if (r.panelName === '거의없다') n = mappedData;
-          else if (r.panelName === '기타') {
-            o = { ...mappedData, otherName: '직접입력', customName: r.reviewerName };
+          else {
+            // ⭐️ 신작/전찬일/라이너/거의없다가 아니면(즉, 기타 게스트면) 무조건 guests 배열에 쏙쏙 집어넣기!
+            loadedGuests.push({
+              id: r.id || Date.now() + Math.random(),
+              name: r.reviewerName || '', 
+              job: r.reviewerJob || '평론가', // DB에 직업이 없으면 평론가로 기본 세팅
+              ...mappedData
+            });
           }
         });
-        setNewRelease(nR); setJeon(j); setLiner(l); setNone(n); setOther(o);
+  
+        setNewRelease(nR); setJeon(j); setLiner(l); setNone(n);
+        
+        // 불러온 게스트가 있으면 그걸 보여주고, 없으면 빈 칸 1개 띄우기
+        if (loadedGuests.length > 0) {
+          setGuests(loadedGuests);
+        } else {
+          setGuests([{ id: Date.now(), name: '', job: '평론가', ...initialFormState }]);
+        }
       } else {
+        // 신규 등록일 때 (빈 화면 세팅)
         setDate(getRecentFridayKST());
-        setNewRelease({ ...initialNewReleaseState }); setJeon({ ...initialFormState }); setLiner({ ...initialFormState }); setNone({ ...initialFormState }); setOther({ ...initialFormState, otherName: '직접입력', customName: '' });
+        setNewRelease({ ...initialNewReleaseState }); 
+        setJeon({ ...initialFormState }); 
+        setLiner({ ...initialFormState }); 
+        setNone({ ...initialFormState });
+        setGuests([{ id: Date.now(), name: '', job: '평론가', ...initialFormState }]);
       }
     }
   }, [isOpen, editData]);
