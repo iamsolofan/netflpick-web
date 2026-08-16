@@ -1459,7 +1459,8 @@ const addGuest = () => {
     ];
   
     guests.forEach(guest => {
-      if (guest.title) { 
+      // ⭐️ 제목이 있거나(신규/수정), 이미 DB에 저장된 ID가 있으면(삭제용) 통과!
+      if (guest.title || guest.docId) { 
         entries.push({ panel: '기타', data: guest });
       }
     });
