@@ -1471,20 +1471,26 @@ const addGuest = () => {
         for (const entry of entries) {
           if (entry.data.title.trim()) {
             hasData = true;
-            const finalPanelName = entry.panel === '기타' ? ((entry.data.otherName === '직접입력' ? entry.data.customName : entry.data.otherName) || '기타') : entry.panel;
-            
-            const reviewObj = {
-              id: entry.data.movieId || Date.now() + Math.random(),
-              title: entry.data.title, poster: entry.data.poster,
-              rating: entry.data.rating !== undefined ? entry.data.rating : 8.0,
-              isRecommend: entry.panel === '신작' ? true : entry.data.isRecommend,
-              opinions: entry.panel === '신작' ? entry.data.opinions : null,
-              comment: entry.data.comment || '',
-              panelName: entry.panel, 
-              reviewerName: finalPanelName, 
-              reviewerJob: entry.data.job || '평론가', // ⭐️ 이 줄이 추가되어 직업이 저장됩니다!
-              broadcastDate: date
-            };
+// 1. 이름이 비어있으면 '기타 게스트'라는 기본값을 주어 에러 방지
+const finalPanelName = entry.panel === '기타' ? (entry.data.name || entry.data.customName || '기타 게스트') : entry.panel;
+
+// 2. 파이어베이스 에러 방지를 위해 모든 항목에 꼼꼼하게 기본값(||) 세팅
+const reviewObj = {
+  id: entry.data.movieId || Date.now() + Math.random(),
+  title: entry.data.title || '', 
+  poster: entry.data.poster || '',
+  rating: entry.data.rating !== undefined ? entry.data.rating : 8.0,
+  isRecommend: entry.panel === '신작' ? true : (entry.data.isRecommend !== undefined ? entry.data.isRecommend : null),
+  opinions: entry.panel === '신작' ? (entry.data.opinions || []) : null,
+  comment: entry.data.comment || '',
+  panelName: entry.panel || '기타',
+  reviewerName: finalPanelName, 
+  reviewerJob: entry.data.job || '평론가', 
+  broadcastDate: date || ''
+};
+
+// 3. (핵심) 혹시라도 객체 안에 undefined가 남아있다면 파이어베이스가 튕겨내므로 강제로 싹 지워주는 안전장치
+Object.keys(reviewObj).forEach(key => reviewObj[key] === undefined && delete reviewObj[key]);
             
             if (entry.data.docId) {
               await updateDoc(doc(db, "cinema_reviews", entry.data.docId), reviewObj);
