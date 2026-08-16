@@ -1384,10 +1384,10 @@ const addGuest = () => {
             o = { ...mappedData, otherName: '직접입력', customName: r.reviewerName };
           }
         });
-        setNewRelease(nR); setJeon(j); setLiner(l); setNone(n); setChoiG(cG); setChoiW(cW); setOther(o);
+        setNewRelease(nR); setJeon(j); setLiner(l); setNone(n); setOther(o);
       } else {
         setDate(getRecentFridayKST());
-        setNewRelease({ ...initialNewReleaseState }); setJeon({ ...initialFormState }); setLiner({ ...initialFormState }); setNone({ ...initialFormState }); setChoiG({ ...initialFormState }); setChoiW({ ...initialFormState }); setOther({ ...initialFormState, otherName: '직접입력', customName: '' });
+        setNewRelease({ ...initialNewReleaseState }); setJeon({ ...initialFormState }); setLiner({ ...initialFormState }); setNone({ ...initialFormState }); setOther({ ...initialFormState, otherName: '직접입력', customName: '' });
       }
     }
   }, [isOpen, editData]);
