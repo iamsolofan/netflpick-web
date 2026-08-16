@@ -1507,6 +1507,7 @@ Object.keys(reviewObj).forEach(key => reviewObj[key] === undefined && delete rev
       onRefresh();
       onClose();
     } catch(e) {
+      console.error("🔥 진짜 에러 원인은 이거야! :", e); // ⭐️ 파이어베이스 에러를 콘솔에 출력하는 코드 추가
       alert("DB 저장/수정에 실패했습니다.");
     }
   };
