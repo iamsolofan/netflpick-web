@@ -1279,10 +1279,28 @@ const AdminCinemaInputRow = ({ label, value, onChange, isNewRelease, isOther }) 
            <button onClick={() => onChange({...value, title: '', movieId: null, poster: ''})} className="text-xs bg-gray-700 px-2 py-1 rounded">다시 검색</button>
          </div>
          {isOther && (
-            <div className="mb-2 flex gap-2">
-              <input type="text" placeholder="게스트 이름 직접 입력" value={value.customName} onChange={e => onChange({...value, customName: e.target.value})} className="p-2 bg-gray-900 border border-gray-700 rounded text-sm text-white flex-1 outline-none focus:border-red-500" />
-            </div>
-         )}
+  <div className="mb-2 flex gap-2">
+    <input 
+      type="text" 
+      placeholder="게스트 이름 직접 입력 (예: 황석정)" 
+      value={value.customName || value.name || ''} 
+      onChange={(e) => onChange({ ...value, customName: e.target.value, name: e.target.value })}
+      className="flex-1 bg-gray-900 text-white p-2 border border-gray-700 rounded text-sm focus:outline-none focus:border-red-500"
+    />
+    <select 
+      value={value.job || '평론가'}
+      onChange={(e) => onChange({ ...value, job: e.target.value })}
+      className="w-1/3 bg-gray-900 text-white p-2 border border-gray-700 rounded text-sm focus:outline-none focus:border-red-500"
+    >
+      <option value="평론가">평론가</option>
+      <option value="배우">배우</option>
+      <option value="가수">가수</option>
+      <option value="방송인">방송인</option>
+      <option value="감독">감독</option>
+      <option value="기자">기자</option>
+    </select>
+  </div>
+)}
          <div className="flex gap-3 items-center mb-3 bg-gray-900 p-2 rounded">
            <img src={value.poster} alt="" className="w-12 h-16 object-cover rounded shadow-md" />
            <span className="font-bold text-sm text-white">{value.title}</span>
@@ -1338,7 +1356,7 @@ const AdminCinemaModal = ({ isOpen, onClose, onRefresh, editData }) => {
       { critic: '라이너', isRecommend: null, active: false, rating: 8.0, comment: '' },
       { critic: '거의없다', isRecommend: null, active: false, rating: 8.0, comment: '' },
       { critic: '전찬일', isRecommend: null, active: false, rating: 8.0, comment: '' },
-      { critic: '기타', customName: '', isRecommend: null, active: false, rating: 8.0, comment: '' }
+      { critic: '기타', customName: '', job: '평론가', isRecommend: null, active: false, rating: 8.0, comment: '' }
     ]
   };
 
