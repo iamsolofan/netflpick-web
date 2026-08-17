@@ -1907,7 +1907,7 @@ function MainApp() {
 
       const movieMap = new Map();
 
- // 전체 평점 및 추천수 계산 로직
+ // 전체 평점과 추천수 계산 로직
  const countMovieStats = (data) => {
     const safeId = String(data.id); // ⭐ 핵심: 숫자 ID와 문자 ID를 하나로 완벽하게 통일!
 
