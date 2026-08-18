@@ -2067,15 +2067,17 @@ function MainApp() {
         </div>
 
         <div className="w-full overflow-x-auto pb-2 scrollbar-hide border-t border-gray-800 pt-4">
-          <nav className="flex gap-4 md:gap-6 text-sm font-medium whitespace-nowrap w-max">
-            {/* 각 버튼마다 고유한 URL을 할당했습니다 */}
+        <nav className="flex gap-4 md:gap-6 text-sm font-medium whitespace-nowrap w-max">
             <button onClick={() => navigate('/')} className={`transition-colors ${location.pathname === '/' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>추천 영화</button>
             <button onClick={() => navigate('/latest-reviews')} className={`transition-colors ${location.pathname === '/latest-reviews' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>최신 리뷰</button>
             <button onClick={() => navigate('/my-taste')} className={`transition-colors ${location.pathname === '/my-taste' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>나의 취향</button>
             <button onClick={() => navigate('/cinema-hell')} className={`transition-colors ${location.pathname === '/cinema-hell' ? 'text-red-400 font-bold border-b-2 border-red-400 pb-1' : 'text-gray-400 hover:text-red-300'}`}>매불쇼 시네마지옥</button>
-            <button onClick={() => navigate('/board/general')} className={`transition-colors ${location.pathname === '/board/general' ? 'text-yellow-400 font-bold border-b-2 border-yellow-400 pb-1' : 'text-gray-400 hover:text-yellow-300'}`}>전체 게시판</button>
-            <button onClick={() => navigate('/board/qna')} className={`transition-colors ${location.pathname === '/board/qna' ? 'text-blue-400 font-bold border-b-2 border-blue-400 pb-1' : 'text-gray-400 hover:text-blue-300'}`}>질문/답변</button>
+            
+            {/* 🔥 나의 평점을 시네마지옥 바로 다음으로 이동 */}
             <button onClick={() => navigate('/my-ratings')} className={`transition-colors ${location.pathname === '/my-ratings' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>나의 평점</button>
+            
+            {/* 🔥 전체게시판: 워드프레스 블로그로 넘어가는 외부 링크로 변경 (질문/답변 삭제) */}
+            <a href="https://blog.netflpick.com" className="text-yellow-400 hover:text-yellow-300 transition-colors font-bold flex items-center">전체 게시판 ↗</a>
 
             {isAdmin && (
               <button onClick={() => navigate('/admin-users')} className={`transition-colors ${location.pathname === '/admin-users' ? 'text-red-400 font-bold border-b-2 border-red-400 pb-1' : 'text-gray-400 hover:text-red-300'}`}>👑 회원 관리</button>
