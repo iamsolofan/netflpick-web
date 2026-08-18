@@ -1888,8 +1888,6 @@ function MainApp() {
 
           {/* 7. 기존에 설정되어 있던 게시판과 상세페이지 방들 (유지) */}
           <Route path="/movie/:id" element={<MovieDetailPage myRatings={myRatings} onOpenReviewForm={handleOpenReviewForm} />} />
-          <Route path="/board/:type" element={<BoardListPage user={dbUser} onLoginRequired={() => setIsLoginModalOpen(true)} />} />
-          <Route path="/board/:type/:postId" element={<BoardDetailPage user={dbUser} onLoginRequired={() => setIsLoginModalOpen(true)} />} />
         </Routes>
       </main>
 
