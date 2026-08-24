@@ -74,6 +74,13 @@ const Top10Section = ({ title, movies, isWorst = false, onMovieClick }) => {
     return isWorst ? b.notRecommends - a.notRecommends : b.recommends - a.recommends;
   });
 
+  // 1위~10위 그룹과 11위~20위 그룹으로 데이터 분리
+  const top10Movies = sortedMovies.slice(0, 10);
+  const next10Movies = sortedMovies.slice(10, 20);
+
+  // 긴 수식어를 제거하여 깔끔한 서브 타이틀 생성 (예: "🔥 8월 추천작 11위~20위")
+  const cleanTitle = title.replace('유저들이 선택한 ', '').replace('넷플픽 유저들이 꼽은 ', '').replace('넷플픽 유저가 뽑은 ', '');
+
   return (
     <section className="mb-12 animate-fadeIn">
       <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-4 gap-4">
@@ -86,11 +93,38 @@ const Top10Section = ({ title, movies, isWorst = false, onMovieClick }) => {
       {movies.length === 0 ? (
         <div className="h-48 flex items-center justify-center text-gray-500 border border-gray-800 rounded-lg">아직 등록된 영화가 없습니다. 첫 평점을 남겨주세요!</div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
-          {sortedMovies.slice(0, 10).map((movie, index) => (
-            <MovieCard key={`${movie.id}-${index}`} movie={movie} isWorst={isWorst} onMovieClick={onMovieClick} />
-          ))}
-        </div>
+        <>
+          {/* 🏆 1위 ~ 10위 (기존 메인 그리드) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+            {top10Movies.map((movie, index) => (
+              <MovieCard key={`${movie.id}-${index}`} movie={movie} isWorst={isWorst} onMovieClick={onMovieClick} />
+            ))}
+          </div>
+
+          {/* 🥈 11위 ~ 20위 (가로 슬라이더) - 데이터가 있을 때만 노출 */}
+          {next10Movies.length > 0 && (
+            <div className="mt-8 bg-gray-800/40 p-5 rounded-xl border border-gray-800/80">
+              <h3 className="text-sm md:text-base font-bold text-gray-400 mb-4 border-l-2 border-gray-600 pl-2">
+                {cleanTitle} 11위~20위
+              </h3>
+              
+              {/* 스크롤바를 깔끔하게 숨기기 위한 인라인 스타일 */}
+              <style>{`
+                .hide-scrollbar::-webkit-scrollbar { display: none; }
+                .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+              `}</style>
+              
+              {/* 좌우로 드래그/스크롤 가능한 슬라이더 컨테이너 */}
+              <div className="flex overflow-x-auto gap-3 md:gap-4 snap-x hide-scrollbar pb-2">
+                {next10Movies.map((movie, index) => (
+                  <div key={`${movie.id}-${index}`} className="shrink-0 w-[130px] md:w-[150px] snap-start">
+                    <MovieCard movie={movie} isWorst={isWorst} onMovieClick={onMovieClick} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </section>
   );
