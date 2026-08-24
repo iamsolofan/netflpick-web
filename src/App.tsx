@@ -244,16 +244,18 @@ useEffect(() => {
                      {review.isCinema && <span className="bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">매불쇼</span>}
                      <span className="text-white font-bold text-xs">{review.nickname}</span>
                      
-                     {/* 🚨 양방향 추천 표시 로직 */}
-                     {review.isRecommend === 'both' ? (
+{/* 🚨 양방향 추천 표시 로직 */}
+{review.isRecommend === 'both' ? (
                        <div className="flex gap-1">
                          <span className="text-green-400 text-[10px] border border-green-500 px-1.5 py-0.5 rounded bg-green-900/20">추천</span>
                          <span className="text-red-400 text-[10px] border border-red-500 px-1.5 py-0.5 rounded bg-red-900/20">비추천</span>
                        </div>
-                     ) : review.isRecommend ? (
+                     ) : review.isRecommend === true ? (
                        <span className="text-green-400 text-[10px] border border-green-500 px-1.5 py-0.5 rounded bg-green-900/20">추천</span>
-                     ) : (
+                     ) : review.isRecommend === false ? (
                        <span className="text-red-400 text-[10px] border border-red-500 px-1.5 py-0.5 rounded bg-red-900/20">비추천</span>
+                     ) : (
+                       <span className="text-gray-400 text-[10px] border border-gray-600 px-1.5 py-0.5 rounded bg-gray-800">평가없음</span>
                      )}
                    </div>
                    <span className="text-yellow-400 font-bold text-sm">★ {Number(review.rating).toFixed(1)}</span>
@@ -319,16 +321,21 @@ const LatestReviewsSection = ({ latestReviews, onMovieClick }) => (
                   )}
                 </div>
 
-                {/* 🔥 신작 패널별 의견 쫙 뿌려주는 영역 */}
-                {review.panelName === '신작' && review.opinions && (
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {review.opinions.filter(op => op.active).map((op, i) => (
-                      <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded font-extrabold border ${op.isRecommend ? 'bg-green-900/40 text-green-400 border-green-700' : 'bg-red-900/40 text-red-400 border-red-700'}`}>
-                        {op.critic === '기타' ? op.customName : op.critic} {op.isRecommend ? '👍' : '👎'}
-                      </span>
-                    ))}
-                  </div>
-                )}
+{/* 🔥 신작 패널별 의견 쫙 뿌려주는 영역 */}
+{review.panelName === '신작' && review.opinions && (
+  <div className="flex flex-wrap gap-1 mb-2">
+    {review.opinions.filter(op => op.active).map((op, i) => (
+      <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded font-extrabold border ${
+        op.isRecommend === true ? 'bg-green-900/40 text-green-400 border-green-700' : 
+        op.isRecommend === false ? 'bg-red-900/40 text-red-400 border-red-700' : 
+        'bg-gray-800 text-gray-400 border-gray-600'
+      }`}>
+        {op.critic === '기타' ? op.customName : op.critic}
+        {op.isRecommend === true ? ' 👍' : op.isRecommend === false ? ' 👎' : ''}
+      </span>
+    ))}
+  </div>
+)}
 
                 <p className="text-gray-300 text-sm bg-gray-900 p-3 rounded border border-gray-700">"{review.comment}"</p>
               </div>
@@ -1489,17 +1496,21 @@ const CinemaHellSection = ({ isAdmin, onMovieClick, onRefreshGlobal }) => {
                   <h3 className="text-lg font-bold text-white cursor-pointer hover:text-red-400 transition-colors truncate" onClick={() => onMovieClick(review)}>{review.title}</h3>
                 </div>
 
-                {/* 🔥 신작 패널별 의견 쫙 뿌려주는 영역 */}
-                {review.panelName === '신작' && review.opinions && (
+{/* 🔥 신작 패널별 의견 쫙 뿌려주는 영역 */}
+{review.panelName === '신작' && review.opinions && (
                   <div className="flex flex-wrap gap-1 mb-1.5 mt-0.5">
                     {review.opinions.filter(op => op.active).map((op, i) => (
-                      <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded font-extrabold border ${op.isRecommend ? 'bg-green-900/40 text-green-400 border-green-700' : 'bg-red-900/40 text-red-400 border-red-700'}`}>
-                        {op.critic === '기타' ? op.customName : op.critic} {op.isRecommend ? '👍' : '👎'}
+                      <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded font-extrabold border ${
+                        op.isRecommend === true ? 'bg-green-900/40 text-green-400 border-green-700' : 
+                        op.isRecommend === false ? 'bg-red-900/40 text-red-400 border-red-700' : 
+                        'bg-gray-800 text-gray-400 border-gray-600'
+                      }`}>
+                        {op.critic === '기타' ? op.customName : op.critic}
+                        {op.isRecommend === true ? ' 👍' : op.isRecommend === false ? ' 👎' : ''}
                       </span>
                     ))}
                   </div>
                 )}
-
                 <div className="text-yellow-400 text-sm font-bold mb-1">★ {Number(review.rating).toFixed(1)}</div>
                 {review.panelName !== '신작' && <span className="text-gray-500 text-[10px] mb-1">{review.broadcastDate || (review.date ? new Date(review.date).toLocaleDateString('ko-KR') : '')}</span>}
                 <p className="text-gray-300 text-xs truncate">"{review.comment}"</p>
