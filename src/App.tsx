@@ -1860,7 +1860,7 @@ function MainApp() {
             <button onClick={() => navigate('/my-ratings')} className={`transition-colors ${location.pathname === '/my-ratings' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>나의 평점</button>
             
             {/* 🔥 전체게시판: 워드프레스 블로그로 넘어가는 외부 링크로 변경 (질문/답변 삭제) */}
-            <a href="https://blog.netflpick.com" target="_blank" rel="noopener noreferrer" className="text-white hover:text-gray-200 transition-colors font-bold flex items-center">전체 게시판 ↗</a>            {isAdmin && (
+            <a href="https://blog.netflpick.com/category/netflpick/" target="_blank" rel="noopener noreferrer" className="text-white hover:text-gray-200 transition-colors font-bold flex items-center">전체 게시판 ↗</a>            {isAdmin && (
               <button onClick={() => navigate('/admin-users')} className={`transition-colors ${location.pathname === '/admin-users' ? 'text-red-400 font-bold border-b-2 border-red-400 pb-1' : 'text-gray-400 hover:text-red-300'}`}>👑 회원 관리</button>
             )}
           </nav>
