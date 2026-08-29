@@ -386,70 +386,78 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
   const matchingUsers = useMemo(() => {
     if (!myRatings || myRatings.length === 0) return [];
 
-    const profiles = {}; 
+    const profiles = {};
     const myRatingsMap = new Map();
     
-    // 나의 평점 정보를 쉽게 찾기 위해 Map으로 정리
-    myRatings.forEach(r => myRatingsMap.set(r.id, r));
-    const myRatedIds = new Set(myRatingsMap.keys());
+    // 💡 헬퍼 함수: 제목의 띄어쓰기를 없애고 소문자로 만들어 완벽한 비교 기준으로 사용
+    const getSafeKey = (movie) => movie.title ? movie.title.replace(/\s+/g, '').toLowerCase() : String(movie.id);
+
+    // 나의 평점 정보를 쉽게 찾기 위해 Map으로 정리 (키를 id에서 safeKey로 변경!)
+    myRatings.forEach(r => myRatingsMap.set(getSafeKey(r), r));
+    const myRatedKeys = new Set(myRatingsMap.keys());
     
     // 일반 유저 프로필 수집
     allRatings.forEach(r => {
-      if (r.uid === myRatings[0].uid) return; 
-      if (!profiles[r.uid]) profiles[r.uid] = { id: r.uid, name: r.nickname, avatar: '👤', likes: [], dislikes: [], ratedIds: new Set() };
-      profiles[r.uid].ratedIds.add(r.id);
+      if (r.uid === myRatings[0].uid) return;
+      if (!profiles[r.uid]) profiles[r.uid] = { id: r.uid, name: r.nickname, avatar: '👤', likes: [], dislikes: [], ratedKeys: new Set() };
       
+      const safeKey = getSafeKey(r);
+      profiles[r.uid].ratedKeys.add(safeKey);
+      
+      // likes와 dislikes 배열에 넣을 때 safeKey도 같이 저장해 나중에 찾기 쉽게 만듦
       if (r.isRecommend === 'both') {
-         profiles[r.uid].likes.push(r);
-         profiles[r.uid].dislikes.push(r);
-      } else if (r.isRecommend) profiles[r.uid].likes.push(r);
-      else profiles[r.uid].dislikes.push(r);
+         profiles[r.uid].likes.push({ ...r, safeKey });
+         profiles[r.uid].dislikes.push({ ...r, safeKey });
+      } else if (r.isRecommend) profiles[r.uid].likes.push({ ...r, safeKey });
+      else profiles[r.uid].dislikes.push({ ...r, safeKey });
     });
 
     // 패널(평론가/배우 등) 프로필 수집
     allCinemaReviews.forEach(r => {
       const criticId = `critic_${r.reviewerName}`;
-      
       const role = r.reviewerJob || '평론가';
       
-      if (!profiles[criticId]) profiles[criticId] = { id: criticId, name: `${r.reviewerName} (${role})`, avatar: '🎬', likes: [], dislikes: [], ratedIds: new Set() };
-      profiles[criticId].ratedIds.add(r.id);
+      if (!profiles[criticId]) profiles[criticId] = { id: criticId, name: `${r.reviewerName} (${role})`, avatar: '🎬', likes: [], dislikes: [], ratedKeys: new Set() };
+      
+      const safeKey = getSafeKey(r);
+      profiles[criticId].ratedKeys.add(safeKey);
       
       if (r.isRecommend === 'both') {
-         profiles[criticId].likes.push(r);
-         profiles[criticId].dislikes.push(r);
-      } else if (r.isRecommend) profiles[criticId].likes.push(r);
-      else profiles[criticId].dislikes.push(r);
+         profiles[criticId].likes.push({ ...r, safeKey });
+         profiles[criticId].dislikes.push({ ...r, safeKey });
+      } else if (r.isRecommend) profiles[criticId].likes.push({ ...r, safeKey });
+      else profiles[criticId].dislikes.push({ ...r, safeKey });
     });
 
     const results = [];
 
     Object.values(profiles).forEach(profile => {
-       const commonIds = [...profile.ratedIds].filter(id => myRatedIds.has(id));
-       if (commonIds.length === 0) return; 
+       // 공통 평가한 영화들을 id가 아닌 safeKey(제목) 기준으로 필터링
+       const commonKeys = [...profile.ratedKeys].filter(key => myRatedKeys.has(key));
+       if (commonKeys.length === 0) return; 
 
        let agreements = 0;
        const commonLikes = [];
        const commonDislikes = [];
        const commonDisagreements = []; 
 
-       commonIds.forEach(id => {
-          const myR = myRatingsMap.get(id);
+       commonKeys.forEach(key => {
+          const myR = myRatingsMap.get(key);
           const myVote = myR.isRecommend === 'both' ? '🤔' : (myR.isRecommend ? '👍' : '👎');
           
-          const theirR = profile.likes.find(m => m.id === id) || profile.dislikes.find(m => m.id === id);
+          const theirR = profile.likes.find(m => m.safeKey === key) || profile.dislikes.find(m => m.safeKey === key);
           const theirVote = theirR.isRecommend === 'both' ? '🤔' : (theirR.isRecommend ? '👍' : '👎');
 
           const movieInfo = {
-              id: id, title: theirR.title, poster: theirR.poster,
+              id: key, title: theirR.title, poster: theirR.poster,
               myVote: myVote, myRating: myR.rating || 0,
               theirVote: theirVote, theirRating: theirR.rating || 0
           };
 
           const iLiked = myR.isRecommend === true || myR.isRecommend === 'both';
           const iDisliked = myR.isRecommend === false || myR.isRecommend === 'both';
-          const theyLiked = profile.likes.some(m => m.id === id);
-          const theyDisliked = profile.dislikes.some(m => m.id === id);
+          const theyLiked = profile.likes.some(m => m.safeKey === key);
+          const theyDisliked = profile.dislikes.some(m => m.safeKey === key);
 
           if (iLiked && theyLiked) {
              agreements++;
@@ -463,13 +471,13 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
           }
        });
 
-       const matchRate = Math.round((agreements / commonIds.length) * 100);
+       const matchRate = Math.round((agreements / commonKeys.length) * 100);
        
        if (agreements > 0 || commonDisagreements.length > 0) {
          results.push({
            ...profile,
            matchRate,
-           commonCount: commonIds.length,
+           commonCount: commonKeys.length,
            agreements,
            commonLikes,
            commonDislikes,
@@ -484,7 +492,6 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
     }).slice(0, 5);
 
   }, [myRatings, allRatings, allCinemaReviews]);
-
   // 🎬 영화 리스트 렌더링 헬퍼 함수 (디자인 수정 반영)
   const renderMovieList = (movies) => (
       <div className="flex flex-col gap-3">
