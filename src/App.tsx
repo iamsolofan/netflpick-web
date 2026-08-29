@@ -382,7 +382,7 @@ const LatestReviewsSection = ({ latestReviews, onMovieClick }) => (
 
 const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick }) => {
   const [expandedUserId, setExpandedUserId] = useState(null);
-  const [sortType, setSortType] = useState('score'); // 'score' (매칭 점수순) 또는 'rate' (일치율순)
+  const [sortType, setSortType] = useState('score');
 
   const matchingUsers = useMemo(() => {
     if (!myRatings || myRatings.length === 0) return [];
@@ -390,7 +390,6 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
     const profiles = {};
     const myRatingsMap = new Map();
     
-    // 💡 띄어쓰기를 없앤 제목을 고유 키로 사용하여 다른 ID로 저장된 동일 영화를 완벽하게 병합
     const getSafeKey = (movie) => movie.title ? movie.title.replace(/\s+/g, '').toLowerCase() : String(movie.id);
 
     myRatings.forEach(r => myRatingsMap.set(getSafeKey(r), r));
@@ -416,7 +415,6 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
       const criticId = `critic_${r.reviewerName}`;
       const role = r.reviewerJob || '평론가';
       
-      // 최신 직업 정보로 계속 덮어씌우기 (황석정 평론가 -> 배우 버그 방어)
       if (!profiles[criticId]) {
         profiles[criticId] = { id: criticId, name: `${r.reviewerName} (${role})`, avatar: '🎬', likes: [], dislikes: [], ratedKeys: new Set() };
       } else {
@@ -435,13 +433,13 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
 
     const results = [];
 
-    // 3. 점수 계산 로직 (Plan A + 페널티)
+    // 3. 점수 계산 및 안 본 추천 영화 추출 로직
     Object.values(profiles).forEach(profile => {
        const commonKeys = [...profile.ratedKeys].filter(key => myRatedKeys.has(key));
-       if (commonKeys.length === 0) return; // 1편이라도 겹치면 계산 시작
+       if (commonKeys.length === 0) return;
 
        let agreements = 0;
-       let matchScore = 0; // 🔥 매칭 점수
+       let matchScore = 0; 
        const commonLikes = [];
        const commonDislikes = [];
        const commonDisagreements = []; 
@@ -467,54 +465,68 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
           const theyLiked = profile.likes.some(m => m.safeKey === key);
           const theyDisliked = profile.dislikes.some(m => m.safeKey === key);
 
-          // 평점 차이 계산 (절대값)
           const ratingDiff = Math.abs(myRatingNum - theirRatingNum);
 
           if (iLiked && theyLiked) {
              agreements++;
-             matchScore += 10; // 일치: +10점
-             matchScore -= ratingDiff; // 평점 오차만큼 감점
+             matchScore += 10; 
+             matchScore -= ratingDiff; 
              commonLikes.push(movieInfo);
           } else if (iDisliked && theyDisliked) {
              agreements++;
-             matchScore += 10; // 일치: +10점
+             matchScore += 10; 
              matchScore -= ratingDiff;
              commonDislikes.push(movieInfo);
           } else {
-             matchScore -= 5; // 불일치: -5점 페널티
+             matchScore -= 5; 
              matchScore -= ratingDiff;
              commonDisagreements.push(movieInfo);
           }
        });
+
+       // 🔥 내가 안 본 상대방의 추천 영화 추출 로직
+       const unseenRecommendations = [];
+       profile.likes.forEach(m => {
+           if (!myRatedKeys.has(m.safeKey)) {
+               unseenRecommendations.push({
+                   id: m.safeKey, title: m.title, poster: m.poster,
+                   theirVote: m.isRecommend === 'both' ? '🤔' : (m.isRecommend ? '👍' : '👎'),
+                   theirRating: Number(m.rating) || 0
+               });
+           }
+       });
+       // 상대방이 높게 평가한 순으로 정렬
+       unseenRecommendations.sort((a, b) => b.theirRating - a.theirRating);
 
        const matchRate = Math.round((agreements / commonKeys.length) * 100);
        
        results.push({
          ...profile,
          matchRate,
-         matchScore: Math.round(matchScore * 10) / 10, // 소수점 한자리 보정
+         matchScore: Math.round(matchScore * 10) / 10,
          commonCount: commonKeys.length,
          agreements,
          commonLikes,
          commonDislikes,
-         commonDisagreements
+         commonDisagreements,
+         unseenRecommendations // 🔥 추출한 안 본 영화 리스트를 추가
        });
     });
 
-    // 4. 선택된 정렬 방식에 따라 소팅
+    // 4. 정렬 로직
     return results.sort((a, b) => {
        if (sortType === 'score') {
            if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
-           return b.commonCount - a.commonCount; // 점수가 같으면 다작 우선
+           return b.commonCount - a.commonCount; 
        } else {
            if (b.matchRate !== a.matchRate) return b.matchRate - a.matchRate;
-           return b.commonCount - a.commonCount; // 비율이 같으면 다작 우선
+           return b.commonCount - a.commonCount; 
        }
     }).slice(0, 100);
 
-  }, [myRatings, allRatings, allCinemaReviews, sortType]); // 정렬 상태가 바뀌면 재계산
+  }, [myRatings, allRatings, allCinemaReviews, sortType]); 
 
-  // 영화 리스트 렌더링 헬퍼 함수
+  // 공통 평가 영화 렌더링 헬퍼
   const renderMovieList = (movies) => (
       <div className="flex flex-col gap-3">
           {movies.map((m, i) => (
@@ -533,9 +545,25 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
       </div>
   );
 
+  // 🔥 안 본 추천 영화 전용 렌더링 헬퍼
+  const renderUnseenList = (movies) => (
+      <div className="flex flex-col gap-3">
+          {movies.map((m, i) => (
+              <div key={i} className="flex items-center gap-4 bg-blue-900/20 p-3 rounded-lg border border-blue-900/50 cursor-pointer hover:border-blue-700 transition-colors" onClick={(e) => { e.stopPropagation(); onMovieClick(m); }}>
+                  <img src={m.poster} alt={m.title} className="w-14 h-20 object-cover rounded shadow-md shrink-0 border border-gray-700" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(m.title)}`; }} />
+                  <div className="flex flex-col flex-1 overflow-hidden">
+                      <span className="text-white font-bold text-base mb-1.5 truncate">{m.title}</span>
+                      <div className="text-xs text-gray-400 bg-gray-900 p-2 rounded inline-block w-fit border border-gray-700">
+                          <span className="font-semibold text-blue-400">추천:</span> {m.theirVote} ({Number(m.theirRating).toFixed(1)}점)
+                      </div>
+                  </div>
+              </div>
+          ))}
+      </div>
+  );
+
   return (
     <section className="animate-fadeIn">
-      {/* 🔥 정렬 버튼이 추가된 상단 헤더 영역 */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
         <h2 className="text-3xl font-extrabold text-white text-center md:text-left">🤝 나와 <span className="text-red-500">취향이 맞는</span> 유저 Top 100</h2>
         <div className="flex bg-gray-800 rounded-md p-1 border border-gray-700 shadow-lg">
@@ -563,7 +591,6 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
                        <h3 className="text-lg font-bold text-white">{user.name}</h3>
                     </div>
                   </div>
-                  {/* 🔥 우측 정보: 매칭 점수 메인 노출 + 일치율 서브 노출 */}
                   <div className="text-right shrink-0">
                      <div className={`font-extrabold text-xl ${user.matchScore >= 0 ? 'text-red-400' : 'text-blue-400'}`}>
                         {user.matchScore >= 0 ? '🔥' : '❄️'} 매칭 {user.matchScore}점
@@ -575,28 +602,45 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
                 </div>
                 
                 {isExpanded && (
-                  <div className="mt-6 pt-6 border-t border-gray-700 flex flex-col gap-6">
+                  // 🔥 여기서부터 그리드를 2분할(lg:grid-cols-2)로 나눕니다.
+                  <div className="mt-6 pt-6 border-t border-gray-700 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                     
-                    {user.commonLikes.length > 0 && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center"><span className="text-green-400">👍</span> 통했네 통했어! 같이 추천한 영화</h4>
-                        {renderMovieList(user.commonLikes)}
-                      </div>
-                    )}
-                    
-                    {user.commonDislikes.length > 0 && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center"><span className="text-red-400">👎</span> 같이 비추천한 영화</h4>
-                        {renderMovieList(user.commonDislikes)}
-                      </div>
-                    )}
+                    {/* 👈 왼쪽 단: 기존 겹치는 영화 기록 */}
+                    <div className="flex flex-col gap-6">
+                      {user.commonLikes.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center"><span className="text-green-400">👍</span> 통했네 통했어! 같이 추천한 영화</h4>
+                          {renderMovieList(user.commonLikes)}
+                        </div>
+                      )}
+                      {user.commonDislikes.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center"><span className="text-red-400">👎</span> 같이 비추천한 영화</h4>
+                          {renderMovieList(user.commonDislikes)}
+                        </div>
+                      )}
+                      {user.commonDisagreements.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center"><span className="text-yellow-400">🔀</span> 서로 의견이 엇갈린 영화</h4>
+                          {renderMovieList(user.commonDisagreements)}
+                        </div>
+                      )}
+                    </div>
 
-                    {user.commonDisagreements.length > 0 && (
+                    {/* 👉 오른쪽 단: 내가 안 본 추천 영화 (가운데 세로선 추가) */}
+                    <div className="flex flex-col gap-6 lg:border-l lg:border-gray-700 lg:pl-8">
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center"><span className="text-yellow-400">🔀</span> 서로 의견이 엇갈린 영화</h4>
-                        {renderMovieList(user.commonDisagreements)}
+                        <h4 className="text-sm font-semibold text-gray-300 mb-3 text-center"><span className="text-blue-400">👀</span> 내가 안 본 추천 영화</h4>
+                        
+                        {user.unseenRecommendations.length > 0 ? (
+                            renderUnseenList(user.unseenRecommendations)
+                        ) : (
+                            <div className="text-center text-xs text-gray-500 py-10 bg-gray-900 rounded-lg border border-gray-800">
+                                상대방의 추천작 중 아직 안 보신 영화가 없습니다.
+                            </div>
+                        )}
                       </div>
-                    )}
+                    </div>
 
                   </div>
                 )}
