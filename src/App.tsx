@@ -848,8 +848,7 @@ const ReviewModal = ({ isOpen, onClose, onAddRating, onUpdateRating, user, initi
         onClose();
       } catch (e) { alert("수정 중 오류가 발생했습니다."); }
     } else {
-      const hasAlreadyRated = myRatings.some(r => String(r.id) === String(selectedMovie.id));
-      if (hasAlreadyRated) {
+      const hasAlreadyRated = myRatings.some(r => r.title === selectedMovie.title);      if (hasAlreadyRated) {
         return alert("이미 평점을 남기신 영화입니다.");
       }
       
