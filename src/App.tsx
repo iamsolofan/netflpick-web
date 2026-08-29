@@ -382,6 +382,7 @@ const LatestReviewsSection = ({ latestReviews, onMovieClick }) => (
 
 const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick }) => {
   const [expandedUserId, setExpandedUserId] = useState(null);
+  const [sortType, setSortType] = useState('score'); // 'score' (매칭 점수순) 또는 'rate' (일치율순)
 
   const matchingUsers = useMemo(() => {
     if (!myRatings || myRatings.length === 0) return [];
@@ -389,22 +390,20 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
     const profiles = {};
     const myRatingsMap = new Map();
     
-    // 💡 헬퍼 함수: 제목의 띄어쓰기를 없애고 소문자로 만들어 완벽한 비교 기준으로 사용
+    // 💡 띄어쓰기를 없앤 제목을 고유 키로 사용하여 다른 ID로 저장된 동일 영화를 완벽하게 병합
     const getSafeKey = (movie) => movie.title ? movie.title.replace(/\s+/g, '').toLowerCase() : String(movie.id);
 
-    // 나의 평점 정보를 쉽게 찾기 위해 Map으로 정리 (키를 id에서 safeKey로 변경!)
     myRatings.forEach(r => myRatingsMap.set(getSafeKey(r), r));
     const myRatedKeys = new Set(myRatingsMap.keys());
     
-    // 일반 유저 프로필 수집
+    // 1. 일반 유저 프로필 수집
     allRatings.forEach(r => {
-      if (r.uid === myRatings[0].uid) return;
+      if (r.uid === myRatings[0].uid) return; 
       if (!profiles[r.uid]) profiles[r.uid] = { id: r.uid, name: r.nickname, avatar: '👤', likes: [], dislikes: [], ratedKeys: new Set() };
       
       const safeKey = getSafeKey(r);
       profiles[r.uid].ratedKeys.add(safeKey);
       
-      // likes와 dislikes 배열에 넣을 때 safeKey도 같이 저장해 나중에 찾기 쉽게 만듦
       if (r.isRecommend === 'both') {
          profiles[r.uid].likes.push({ ...r, safeKey });
          profiles[r.uid].dislikes.push({ ...r, safeKey });
@@ -412,12 +411,17 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
       else profiles[r.uid].dislikes.push({ ...r, safeKey });
     });
 
-    // 패널(평론가/배우 등) 프로필 수집
+    // 2. 패널(평론가/배우 등) 프로필 수집
     allCinemaReviews.forEach(r => {
       const criticId = `critic_${r.reviewerName}`;
       const role = r.reviewerJob || '평론가';
       
-      if (!profiles[criticId]) profiles[criticId] = { id: criticId, name: `${r.reviewerName} (${role})`, avatar: '🎬', likes: [], dislikes: [], ratedKeys: new Set() };
+      // 최신 직업 정보로 계속 덮어씌우기 (황석정 평론가 -> 배우 버그 방어)
+      if (!profiles[criticId]) {
+        profiles[criticId] = { id: criticId, name: `${r.reviewerName} (${role})`, avatar: '🎬', likes: [], dislikes: [], ratedKeys: new Set() };
+      } else {
+        profiles[criticId].name = `${r.reviewerName} (${role})`; 
+      }
       
       const safeKey = getSafeKey(r);
       profiles[criticId].ratedKeys.add(safeKey);
@@ -431,12 +435,13 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
 
     const results = [];
 
+    // 3. 점수 계산 로직 (Plan A + 페널티)
     Object.values(profiles).forEach(profile => {
-       // 공통 평가한 영화들을 id가 아닌 safeKey(제목) 기준으로 필터링
        const commonKeys = [...profile.ratedKeys].filter(key => myRatedKeys.has(key));
-       if (commonKeys.length === 0) return; 
+       if (commonKeys.length === 0) return; // 1편이라도 겹치면 계산 시작
 
        let agreements = 0;
+       let matchScore = 0; // 🔥 매칭 점수
        const commonLikes = [];
        const commonDislikes = [];
        const commonDisagreements = []; 
@@ -448,10 +453,13 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
           const theirR = profile.likes.find(m => m.safeKey === key) || profile.dislikes.find(m => m.safeKey === key);
           const theirVote = theirR.isRecommend === 'both' ? '🤔' : (theirR.isRecommend ? '👍' : '👎');
 
+          const myRatingNum = Number(myR.rating) || 0;
+          const theirRatingNum = Number(theirR.rating) || 0;
+
           const movieInfo = {
               id: key, title: theirR.title, poster: theirR.poster,
-              myVote: myVote, myRating: myR.rating || 0,
-              theirVote: theirVote, theirRating: theirR.rating || 0
+              myVote: myVote, myRating: myRatingNum,
+              theirVote: theirVote, theirRating: theirRatingNum
           };
 
           const iLiked = myR.isRecommend === true || myR.isRecommend === 'both';
@@ -459,48 +467,60 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
           const theyLiked = profile.likes.some(m => m.safeKey === key);
           const theyDisliked = profile.dislikes.some(m => m.safeKey === key);
 
+          // 평점 차이 계산 (절대값)
+          const ratingDiff = Math.abs(myRatingNum - theirRatingNum);
+
           if (iLiked && theyLiked) {
              agreements++;
+             matchScore += 10; // 일치: +10점
+             matchScore -= ratingDiff; // 평점 오차만큼 감점
              commonLikes.push(movieInfo);
           } else if (iDisliked && theyDisliked) {
              agreements++;
+             matchScore += 10; // 일치: +10점
+             matchScore -= ratingDiff;
              commonDislikes.push(movieInfo);
           } else {
-             // 평가가 엇갈린 경우
+             matchScore -= 5; // 불일치: -5점 페널티
+             matchScore -= ratingDiff;
              commonDisagreements.push(movieInfo);
           }
        });
 
        const matchRate = Math.round((agreements / commonKeys.length) * 100);
        
-       if (agreements > 0 || commonDisagreements.length > 0) {
-         results.push({
-           ...profile,
-           matchRate,
-           commonCount: commonKeys.length,
-           agreements,
-           commonLikes,
-           commonDislikes,
-           commonDisagreements
-         });
-       }
+       results.push({
+         ...profile,
+         matchRate,
+         matchScore: Math.round(matchScore * 10) / 10, // 소수점 한자리 보정
+         commonCount: commonKeys.length,
+         agreements,
+         commonLikes,
+         commonDislikes,
+         commonDisagreements
+       });
     });
 
+    // 4. 선택된 정렬 방식에 따라 소팅
     return results.sort((a, b) => {
-       if (b.matchRate !== a.matchRate) return b.matchRate - a.matchRate;
-       return b.commonCount - a.commonCount;
+       if (sortType === 'score') {
+           if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
+           return b.commonCount - a.commonCount; // 점수가 같으면 다작 우선
+       } else {
+           if (b.matchRate !== a.matchRate) return b.matchRate - a.matchRate;
+           return b.commonCount - a.commonCount; // 비율이 같으면 다작 우선
+       }
     }).slice(0, 5);
 
-  }, [myRatings, allRatings, allCinemaReviews]);
-  // 🎬 영화 리스트 렌더링 헬퍼 함수 (디자인 수정 반영)
+  }, [myRatings, allRatings, allCinemaReviews, sortType]); // 정렬 상태가 바뀌면 재계산
+
+  // 영화 리스트 렌더링 헬퍼 함수
   const renderMovieList = (movies) => (
       <div className="flex flex-col gap-3">
           {movies.map((m, i) => (
               <div key={i} className="flex items-center gap-4 bg-gray-900 p-3 rounded-lg border border-gray-700 cursor-pointer hover:border-gray-500 transition-colors" onClick={(e) => { e.stopPropagation(); onMovieClick(m); }}>
-                  {/* 🔥 포스터 크기 키움 (w-12 h-16 -> w-14 h-20) */}
                   <img src={m.poster} alt={m.title} className="w-14 h-20 object-cover rounded shadow-md shrink-0" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(m.title)}`; }} />
                   <div className="flex flex-col flex-1 overflow-hidden">
-                      {/* 🔥 영화 제목 폰트 키움 (text-sm -> text-base) */}
                       <span className="text-white font-bold text-base mb-1.5 truncate">{m.title}</span>
                       <div className="text-xs text-gray-400 bg-gray-800 p-2 rounded inline-block w-fit border border-gray-700">
                           <span className="font-semibold text-gray-200">나:</span> {m.myVote} ({Number(m.myRating).toFixed(1)}점)
@@ -515,12 +535,19 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
 
   return (
     <section className="animate-fadeIn">
-      <div className="text-center mb-10"><h2 className="text-3xl font-extrabold text-white mb-2">🤝 나와 <span className="text-red-500">취향이 맞는</span> 유저 Top 5</h2></div>
+      {/* 🔥 정렬 버튼이 추가된 상단 헤더 영역 */}
+      <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+        <h2 className="text-3xl font-extrabold text-white text-center md:text-left">🤝 나와 <span className="text-red-500">취향이 맞는</span> 유저 Top 5</h2>
+        <div className="flex bg-gray-800 rounded-md p-1 border border-gray-700 shadow-lg">
+          <button onClick={() => setSortType('score')} className={`px-4 py-2 text-sm font-bold rounded-md transition-colors ${sortType === 'score' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}>매칭 점수순</button>
+          <button onClick={() => setSortType('rate')} className={`px-4 py-2 text-sm font-bold rounded-md transition-colors ${sortType === 'rate' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}>일치율순</button>
+        </div>
+      </div>
       
       {matchingUsers.length === 0 ? (
         <div className="bg-gray-800 p-10 rounded-xl text-center border border-gray-700">
           <p className="text-gray-400 mb-2">아직 겹치는 평가를 남긴 유저나 평론가가 없습니다.</p>
-          <p className="text-gray-500 text-sm">더 훨씬 많은 영화에 평점을 남겨 취향이 맞는 사람을 찾아보세요!</p>
+          <p className="text-gray-500 text-sm">더 많은 영화에 평점을 남겨 취향이 맞는 사람을 찾아보세요!</p>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -534,13 +561,16 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
                     <span className="text-3xl hidden sm:inline">{user.avatar}</span>
                     <div>
                        <h3 className="text-lg font-bold text-white">{user.name}</h3>
-                       {/* 💡 기존에 있던 (일치/총) 텍스트를 여기서 지우고 오른쪽으로 옮겼습니다 */}
                     </div>
                   </div>
+                  {/* 🔥 우측 정보: 매칭 점수 메인 노출 + 일치율 서브 노출 */}
                   <div className="text-right shrink-0">
-                     <div className="text-red-400 font-extrabold text-xl">일치율 {user.matchRate}%</div>
-                     {/* 🔥 일치 편수 텍스트 위치 이동 & 크기, 밝기, 굵기 상향 */}
-                     <div className="text-gray-300 font-bold text-sm mt-1">(일치 {user.agreements}편 / 총 {user.commonCount}편)</div>
+                     <div className={`font-extrabold text-xl ${user.matchScore >= 0 ? 'text-red-400' : 'text-blue-400'}`}>
+                        {user.matchScore >= 0 ? '🔥' : '❄️'} 매칭 {user.matchScore}점
+                     </div>
+                     <div className="text-gray-300 font-bold text-sm mt-1">
+                        일치율 {user.matchRate}% (일치 {user.agreements} / 총 {user.commonCount}편)
+                     </div>
                   </div>
                 </div>
                 
