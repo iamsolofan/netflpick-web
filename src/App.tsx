@@ -497,20 +497,21 @@ const MyTasteSection = ({ dbUser, myRatings, allRatings, allCinemaReviews, onMov
           </div>
         )}
 
-        {/* 하단: 예시 이미지 UI 및 요청하신 문구 */}
+        {/* 하단: 예시 이미지 UI (이미지가 더 선명하게 보이도록 투명도 조절) */}
         <div className="relative bg-gray-900 rounded-b-xl border border-gray-700 overflow-hidden shadow-2xl">
-          <div className="absolute inset-0 bg-gray-900/80 flex flex-col items-center justify-center z-10 p-6 text-center backdrop-blur-sm">
+          <div className="absolute inset-0 bg-gray-900/60 flex flex-col items-center justify-center z-10 p-6 text-center backdrop-blur-sm">
             <span className="text-5xl mb-4">👀</span>
-            <h3 className="text-2xl md:text-3xl font-extrabold text-white mb-4">영화 소울메이트가 추천하는 숨은 명작!</h3>
+            <h3 className="text-2xl md:text-3xl font-extrabold text-white mb-4">나와 취향이 같은 유저들의 추천 영화</h3>
             <p className="text-gray-300 text-sm md:text-base max-w-lg leading-relaxed">
               로그인해서 내가 본 영화에 평점을 남기면<br/>
               나와 같은 취향의 사람들이 추천한 영화를 볼 수 있습니다.
             </p>
           </div>
+          {/* 🔥 이미지 투명도(opacity-30)를 제거하여 사진이 선명하게 보이게 수정했습니다. */}
           <img 
             src="/taste_example.jpg" 
             alt="나의 취향 예시 화면" 
-            className="w-full h-auto object-cover opacity-30 select-none pointer-events-none min-h-[400px]"
+            className="w-full h-auto object-cover select-none pointer-events-none min-h-[400px]"
           />
         </div>
       </section>
