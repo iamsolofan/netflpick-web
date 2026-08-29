@@ -1680,12 +1680,11 @@ function MainApp() {
                 isRecommend: op.isRecommend,
                 date: data.broadcastDate, isCinema: true,
                 reviewerName: op.critic === '기타' ? (op.customName || '기타') : op.critic,
-                reviewerJob: op.job, // 🔥 직업 데이터 누락 해결
+                reviewerJob: op.job, // 🔥 직업 데이터 정상 반영
                 comment: op.comment || data.comment
               }); 
             }
           });
-        }
         } else {
           tempCinema.push({ docId: doc.id, ...data, date: data.broadcastDate, isCinema: true });
         }
