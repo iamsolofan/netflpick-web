@@ -317,68 +317,93 @@ useEffect(() => {
   );
 };
 
-const LatestReviewsSection = ({ latestReviews, onMovieClick }) => (
-  <section className="animate-fadeIn">
-    <div className="mb-12 bg-gray-800 border border-gray-700 rounded-xl p-6 shadow-2xl">
-      <h2 className="text-xl font-bold text-white mb-6 border-l-4 border-red-600 pl-3">🔥 실시간 최신 평가</h2>
-      {latestReviews && latestReviews.length > 0 ? (
-        <div className="flex flex-col gap-6">
-          {latestReviews.map((review, idx) => (
-            <div key={idx} className="flex gap-6 items-center border-b border-gray-700 pb-6 last:border-0 last:pb-0 relative mt-2">
-              
-              <img src={review.poster} onClick={() => onMovieClick(review)} alt="" className="w-20 h-28 object-cover rounded shadow-md bg-gray-700 cursor-pointer hover:opacity-80 transition-opacity shrink-0" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(review.title)}`; }} />
-              <div className="flex-1">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                  <h3 className="text-lg font-bold text-white cursor-pointer hover:text-red-400 transition-colors" onClick={() => onMovieClick(review)}>{review.title}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="text-yellow-400 text-sm font-bold">★ {Number(review.rating).toFixed(1)}</span>
+const LatestReviewsSection = ({ latestReviews, onMovieClick }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // 🔥 기본 10개 노출, 더보기 클릭 시 전체 노출
+  const displayedReviews = isExpanded ? latestReviews : latestReviews?.slice(0, 10);
+
+  return (
+    <section className="animate-fadeIn">
+      <div className="mb-12 bg-gray-800 border border-gray-700 rounded-xl p-6 shadow-2xl">
+        <h2 className="text-xl font-bold text-white mb-6 border-l-4 border-red-600 pl-3">🔥 실시간 최신 평가</h2>
+        {latestReviews && latestReviews.length > 0 ? (
+          <>
+            <div className="flex flex-col gap-6">
+              {displayedReviews.map((review, idx) => (
+                <div key={idx} className="flex gap-6 items-center border-b border-gray-700 pb-6 last:border-0 last:pb-0 relative mt-2">
+                  <img src={review.poster} onClick={() => onMovieClick(review)} alt="" className="w-20 h-28 object-cover rounded shadow-md bg-gray-700 cursor-pointer hover:opacity-80 transition-opacity shrink-0" onError={(e) => { e.target.src = `https://placehold.co/300x450/333333/FFFFFF?text=${encodeURIComponent(review.title)}`; }} />
+                  <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                      <h3 className="text-lg font-bold text-white cursor-pointer hover:text-red-400 transition-colors" onClick={() => onMovieClick(review)}>{review.title}</h3>
+                      <div className="flex items-center gap-2">
+                        <span className="text-yellow-400 text-sm font-bold">★ {Number(review.rating).toFixed(1)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
+                      <span className="font-bold text-gray-300">
+                        {review.panelName === '신작' ? '🎬 신작 소개작' : (review.reviewerName || review.nickname || '익명')}
+                      </span>
+                      <span className="text-gray-600">|</span>
+                      <span>{review.date ? new Date(review.date).toLocaleDateString('ko-KR') : ''}</span>
+                      
+                      {review.panelName !== '신작' && (
+                        <>
+                          <span className="text-gray-600">|</span>
+                          <span className={`font-bold ${review.isRecommend === 'both' ? 'text-yellow-400' : (review.isRecommend ? 'text-green-400' : 'text-red-400')}`}>
+                            {review.isRecommend === 'both' ? '🤔 호불호' : (review.isRecommend ? '👍 추천' : '👎 비추천')}
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    {review.panelName === '신작' && review.opinions && (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {review.opinions.filter(op => op.active).map((op, i) => (
+                          <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded font-extrabold border ${
+                            op.isRecommend === true ? 'bg-green-900/40 text-green-400 border-green-700' : 
+                            op.isRecommend === false ? 'bg-red-900/40 text-red-400 border-red-700' : 
+                            'bg-gray-800 text-gray-400 border-gray-600'
+                          }`}>
+                            {op.critic === '기타' ? op.customName : op.critic}
+                            {op.isRecommend === true ? ' 👍' : op.isRecommend === false ? ' 👎' : ''}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    <p className="text-gray-300 text-sm bg-gray-900 p-3 rounded border border-gray-700">"{review.comment}"</p>
                   </div>
                 </div>
-
-                {/* 🔥 닉네임, 날짜, 추천 여부를 제목 바로 아래로 이동 */}
-                <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
-                  <span className="font-bold text-gray-300">
-                    {review.panelName === '신작' ? '🎬 신작 소개작' : (review.reviewerName || review.nickname || '익명')}
-                  </span>
-                  <span className="text-gray-600">|</span>
-                  <span>{review.date ? new Date(review.date).toLocaleDateString('ko-KR') : ''}</span>
-                  
-                  {/* 신작이 아닌 경우에만 추천/비추천 여부 표시 */}
-                  {review.panelName !== '신작' && (
-                    <>
-                      <span className="text-gray-600">|</span>
-                      <span className={`font-bold ${review.isRecommend === 'both' ? 'text-yellow-400' : (review.isRecommend ? 'text-green-400' : 'text-red-400')}`}>
-                        {review.isRecommend === 'both' ? '🤔 호불호' : (review.isRecommend ? '👍 추천' : '👎 비추천')}
-                      </span>
-                    </>
-                  )}
-                </div>
-
-{/* 🔥 신작 패널별 의견 쫙 뿌려주는 영역 */}
-{review.panelName === '신작' && review.opinions && (
-  <div className="flex flex-wrap gap-1 mb-2">
-    {review.opinions.filter(op => op.active).map((op, i) => (
-      <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded font-extrabold border ${
-        op.isRecommend === true ? 'bg-green-900/40 text-green-400 border-green-700' : 
-        op.isRecommend === false ? 'bg-red-900/40 text-red-400 border-red-700' : 
-        'bg-gray-800 text-gray-400 border-gray-600'
-      }`}>
-        {op.critic === '기타' ? op.customName : op.critic}
-        {op.isRecommend === true ? ' 👍' : op.isRecommend === false ? ' 👎' : ''}
-      </span>
-    ))}
-  </div>
-)}
-
-                <p className="text-gray-300 text-sm bg-gray-900 p-3 rounded border border-gray-700">"{review.comment}"</p>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      ) : <p className="text-gray-500 text-center py-10">등록된 리뷰가 없습니다.</p>}
-    </div>
-  </section>
-);
+
+            {/* 🔥 더보기 / 접기 버튼 추가 영역 */}
+            <div className="mt-8 flex justify-center">
+              {!isExpanded && latestReviews.length > 10 && (
+                <button 
+                  onClick={() => setIsExpanded(true)} 
+                  className="w-full sm:w-auto px-10 py-3 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl transition-colors border border-gray-600 shadow-lg"
+                >
+                  더 많은 리뷰 보기 ▼
+                </button>
+              )}
+              {isExpanded && (
+                <button 
+                  onClick={() => setIsExpanded(false)} 
+                  className="w-full sm:w-auto px-10 py-3 bg-gray-900 hover:bg-black text-gray-400 font-bold rounded-xl transition-colors border border-gray-700 shadow-lg"
+                >
+                  최신 리뷰 접기 ▲
+                </button>
+              )}
+            </div>
+          </>
+        ) : <p className="text-gray-500 text-center py-10">등록된 리뷰가 없습니다.</p>}
+      </div>
+    </section>
+  );
+};
 
 const MyTasteSection = ({ dbUser, myRatings, allRatings, allCinemaReviews, onMovieClick, onLoginClick }) => {
   const [expandedUserId, setExpandedUserId] = useState(null);
@@ -1806,10 +1831,9 @@ const countMovieStats = (data) => {
       const allCombinedReviews = [...tempAllRatings, ...tempCinema].sort((a, b) => {
         const timeA = new Date(a.date || 0).getTime();
         const timeB = new Date(b.date || 0).getTime();
-        // 에러가 나더라도 무시하고, 무조건 가장 최근 시간(큰 숫자)이 맨 위로 오게 강력 정렬!
         return (isNaN(timeB) ? 0 : timeB) - (isNaN(timeA) ? 0 : timeA);
-     });
-     setGlobalLatestReviews(allCombinedReviews.slice(0, 10));
+      });
+      setGlobalLatestReviews(allCombinedReviews); // 🔥 .slice(0, 10)을 지워서 전체 데이터를 넘깁니다.
 
     } catch(e) { console.error("전체 영화 로딩 실패:", e); }
   };
