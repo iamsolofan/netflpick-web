@@ -1946,14 +1946,22 @@ const countMovieStats = (data) => {
             </>
           } />
 
-          {/* 5. 나의 취향 분석 방 (noindex: 로봇 수집 금지) */}
-          <Route path="/my-taste" element={
+{/* 5. 나의 취향 분석 방 (noindex: 로봇 수집 금지) */}
+<Route path="/my-taste" element={
             <>
               <Helmet>
                 <title>나의 취향 - 넷플픽</title>
                 <meta name="robots" content="noindex, nofollow" />
               </Helmet>
-              {!dbUser ? <LoginRequiredMessage onLoginClick={() => setIsLoginModalOpen(true)} /> : <MyTasteSection myRatings={myRatings} allRatings={allRatings} allCinemaReviews={allCinemaReviews} onMovieClick={handleMovieClick} />}
+              {/* 🔥 예전 자물쇠를 지우고 MyTasteSection이 항상 뜨도록 수정 */}
+              <MyTasteSection 
+                dbUser={dbUser} 
+                myRatings={myRatings} 
+                allRatings={allRatings} 
+                allCinemaReviews={allCinemaReviews} 
+                onMovieClick={handleMovieClick} 
+                onLoginClick={() => setIsLoginModalOpen(true)} 
+              />
             </>
           } />
 
