@@ -1688,24 +1688,24 @@ function MainApp() {
 
       const movieMap = new Map();
 
- // 전체 평점 및 추천수 계산 로직
- const countMovieStats = (data) => {
-    const safeId = String(data.id); // ⭐ 핵심: 숫자 ID와 문자 ID를 하나로 완벽하게 통일!
+// 전체 평점 및 추천수 계산 로직
+const countMovieStats = (data) => {
+  // 🔥 핵심: DB에 ID가 다르게 저장되었더라도 완벽하게 하나로 병합되도록 띄어쓰기를 제거한 제목을 고유 키로 사용합니다.
+  const safeKey = data.title ? data.title.replace(/\s+/g, '').toLowerCase() : String(data.id);
 
-    if (!movieMap.has(safeId)) {
-      movieMap.set(safeId, { id: safeId, title: data.title, poster: data.poster, totalRating: 0, count: 0, recommends: 0, notRecommends: 0, latestDate: data.date });
-    }
-    const m = movieMap.get(safeId);
-    m.totalRating += Number(data.rating || 0); // ⭐️ 평점도 안전하게 숫자로 합산
-    m.count += 1;
-    
-    // 🔥 null(애매함) 값은 추천/비추천 어디에도 카운트되지 않도록 명확히 체크
-    if (data.isRecommend === 'both') { m.recommends += 1; m.notRecommends += 1; }
-    else if (data.isRecommend === true || String(data.isRecommend).toLowerCase() === 'true') m.recommends += 1;
-    else if (data.isRecommend === false || String(data.isRecommend).toLowerCase() === 'false') m.notRecommends += 1;
-    
-    if (new Date(data.date) > new Date(m.latestDate)) m.latestDate = data.date;
-  };
+  if (!movieMap.has(safeKey)) {
+    movieMap.set(safeKey, { id: data.id, title: data.title, poster: data.poster, totalRating: 0, count: 0, recommends: 0, notRecommends: 0, latestDate: data.date });
+  }
+  const m = movieMap.get(safeKey);
+  m.totalRating += Number(data.rating || 0);
+  m.count += 1;
+
+  if (data.isRecommend === 'both') { m.recommends += 1; m.notRecommends += 1; }
+  else if (data.isRecommend === true || String(data.isRecommend).toLowerCase() === 'true') m.recommends += 1;
+  else if (data.isRecommend === false || String(data.isRecommend).toLowerCase() === 'false') m.notRecommends += 1;
+
+  if (new Date(data.date) > new Date(m.latestDate)) m.latestDate = data.date;
+};
 
       tempAllRatings.forEach(countMovieStats);
       tempCinema.forEach(countMovieStats);
