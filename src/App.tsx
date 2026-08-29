@@ -176,9 +176,8 @@ useEffect(() => {
   const fetchReviews = async () => {
     if (!db) return;
     try {
-      const rSnap = await getDocs(query(collection(db, "ratings"), where("id", "==", movie.id)));
-      const cSnap = await getDocs(query(collection(db, "cinema_reviews"), where("id", "==", movie.id)));
-      
+      const rSnap = await getDocs(query(collection(db, "ratings"), where("title", "==", movie.title)));
+      const cSnap = await getDocs(query(collection(db, "cinema_reviews"), where("title", "==", movie.title)));      
       const reviews = [];
       rSnap.forEach(doc => reviews.push({ ...doc.data(), isCinema: false }));
       cSnap.forEach(doc => {
