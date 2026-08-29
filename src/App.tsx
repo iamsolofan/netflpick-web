@@ -1676,14 +1676,16 @@ function MainApp() {
             if (op.active) {
               tempCinema.push({
                 docId: `${doc.id}_${index}`, id: data.id, title: data.title, poster: data.poster,
-                rating: op.rating || data.rating, 
+                rating: op.rating || data.rating,
                 isRecommend: op.isRecommend,
                 date: data.broadcastDate, isCinema: true,
                 reviewerName: op.critic === '기타' ? (op.customName || '기타') : op.critic,
+                reviewerJob: op.job, // 🔥 직업 데이터 누락 해결
                 comment: op.comment || data.comment
               }); 
             }
           });
+        }
         } else {
           tempCinema.push({ docId: doc.id, ...data, date: data.broadcastDate, isCinema: true });
         }
