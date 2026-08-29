@@ -472,7 +472,7 @@ const MyTasteSection = ({ dbUser, myRatings, allRatings, allCinemaReviews, onMov
     }).slice(0, 100);
   }, [myRatings, allRatings, allCinemaReviews, sortType]); 
 
-  // 🔥 조건 1: 로그인하지 않았거나 평점이 없을 때 (자물쇠 + 예시 화면)
+  // 🔥 조건 1: 로그인하지 않았거나 평점이 없을 때 (안내문 + 선명한 예시 화면)
   if (!dbUser || !myRatings || myRatings.length === 0) {
     return (
       <section className="animate-fadeIn">
@@ -480,38 +480,45 @@ const MyTasteSection = ({ dbUser, myRatings, allRatings, allCinemaReviews, onMov
           <h2 className="text-3xl font-extrabold text-white text-center md:text-left">🤝 나와 <span className="text-red-500">취향이 맞는</span> 유저 Top 100</h2>
         </div>
         
-        {/* 상단: 자물쇠(또는 평점 유도) UI */}
+        {/* 상단: 안내 문구 및 버튼 영역 */}
         {!dbUser ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center border border-gray-700 rounded-t-xl bg-gray-800 shadow-xl border-b-0">
+          <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-gray-700 rounded-t-xl bg-gray-800 shadow-xl border-b-0">
             <span className="text-6xl mb-4">🔒</span>
-            <h2 className="text-2xl font-bold text-white mb-2">로그인이 필요한 서비스입니다</h2>
-            <p className="text-gray-400 mb-6">넷플픽에 로그인하고 전체 기능을 이용해보세요.</p>
-            <button onClick={onLoginClick} className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-md transition-colors">로그인 하기</button>
+            <h2 className="text-2xl font-bold text-white mb-8">로그인이 필요한 서비스입니다</h2>
+            
+            <h3 className="text-2xl md:text-3xl font-extrabold text-blue-400 mb-4">나와 취향이 같은 유저들의 추천 영화</h3>
+            <p className="text-gray-300 text-base md:text-lg mb-8 leading-relaxed">
+              내가 본 영화에 평점을 남기면<br/>
+              나와 같은 취향의 사람들이 추천하는 영화를 볼 수 있습니다.
+            </p>
+            
+            <button onClick={onLoginClick} className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-10 rounded-full shadow-lg transition-transform hover:scale-105 text-lg">
+              로그인 하기
+            </button>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center border border-gray-700 rounded-t-xl bg-gray-800 shadow-xl border-b-0">
+          <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-gray-700 rounded-t-xl bg-gray-800 shadow-xl border-b-0">
             <span className="text-6xl mb-4">⭐</span>
-            <h2 className="text-2xl font-bold text-white mb-2">평점 데이터가 부족합니다</h2>
-            <p className="text-gray-400 mb-6">나와 취향이 맞는 사람을 찾기 위해 최소 1편 이상의 영화에 평점을 남겨주세요.</p>
-            <a href="/" className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-md transition-colors">영화 평점 남기러 가기</a>
+            <h2 className="text-2xl font-bold text-white mb-8">평점 데이터가 부족합니다</h2>
+            
+            <h3 className="text-2xl md:text-3xl font-extrabold text-blue-400 mb-4">나와 취향이 같은 유저들의 추천 영화</h3>
+            <p className="text-gray-300 text-base md:text-lg mb-8 leading-relaxed">
+              내가 본 영화에 평점을 남기면<br/>
+              나와 같은 취향의 사람들이 추천하는 영화를 볼 수 있습니다.
+            </p>
+            
+            <a href="/" className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-10 rounded-full shadow-lg transition-transform hover:scale-105 text-lg">
+              영화 평점 남기러 가기
+            </a>
           </div>
         )}
 
-        {/* 하단: 예시 이미지 UI (이미지가 더 선명하게 보이도록 투명도 조절) */}
+        {/* 하단: 예시 이미지 (오버레이 및 글씨를 모두 지워 이미지가 선명하게 노출됨) */}
         <div className="relative bg-gray-900 rounded-b-xl border border-gray-700 overflow-hidden shadow-2xl">
-          <div className="absolute inset-0 bg-gray-900/60 flex flex-col items-center justify-center z-10 p-6 text-center backdrop-blur-sm">
-            <span className="text-5xl mb-4">👀</span>
-            <h3 className="text-2xl md:text-3xl font-extrabold text-white mb-4">나와 취향이 같은 유저들의 추천 영화</h3>
-            <p className="text-gray-300 text-sm md:text-base max-w-lg leading-relaxed">
-              로그인해서 내가 본 영화에 평점을 남기면<br/>
-              나와 같은 취향의 사람들이 추천한 영화를 볼 수 있습니다.
-            </p>
-          </div>
-          {/* 🔥 이미지 투명도(opacity-30)를 제거하여 사진이 선명하게 보이게 수정했습니다. */}
           <img 
             src="/taste_example.jpg" 
             alt="나의 취향 예시 화면" 
-            className="w-full h-auto object-cover select-none pointer-events-none min-h-[400px]"
+            className="w-full h-auto object-cover select-none pointer-events-none"
           />
         </div>
       </section>
