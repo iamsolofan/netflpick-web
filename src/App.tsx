@@ -480,7 +480,7 @@ const MyTasteSection = ({ dbUser, myRatings, allRatings, allCinemaReviews, onMov
           <h2 className="text-3xl font-extrabold text-white text-center md:text-left">🤝 나와 <span className="text-red-500">취향이 맞는</span> 유저 Top 100</h2>
         </div>
         
-        {/* 상단: 자물쇠(또는 평점 유도) UI 유지 */}
+        {/* 상단: 자물쇠(또는 평점 유도) UI */}
         {!dbUser ? (
           <div className="flex flex-col items-center justify-center py-16 text-center border border-gray-700 rounded-t-xl bg-gray-800 shadow-xl border-b-0">
             <span className="text-6xl mb-4">🔒</span>
@@ -497,14 +497,14 @@ const MyTasteSection = ({ dbUser, myRatings, allRatings, allCinemaReviews, onMov
           </div>
         )}
 
-        {/* 하단: 예시 이미지 UI */}
+        {/* 하단: 예시 이미지 UI 및 요청하신 문구 */}
         <div className="relative bg-gray-900 rounded-b-xl border border-gray-700 overflow-hidden shadow-2xl">
           <div className="absolute inset-0 bg-gray-900/80 flex flex-col items-center justify-center z-10 p-6 text-center backdrop-blur-sm">
             <span className="text-5xl mb-4">👀</span>
             <h3 className="text-2xl md:text-3xl font-extrabold text-white mb-4">영화 소울메이트가 추천하는 숨은 명작!</h3>
             <p className="text-gray-300 text-sm md:text-base max-w-lg leading-relaxed">
-              로그인하고 내가 본 영화에 평점을 남기면<br/>
-              나와 취향이 맞는 사람들을 찾아줍니다.
+              로그인해서 내가 본 영화에 평점을 남기면<br/>
+              나와 같은 취향의 사람들이 추천한 영화를 볼 수 있습니다.
             </p>
           </div>
           <img 
