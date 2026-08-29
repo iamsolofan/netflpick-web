@@ -510,7 +510,7 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
            if (b.matchRate !== a.matchRate) return b.matchRate - a.matchRate;
            return b.commonCount - a.commonCount; // 비율이 같으면 다작 우선
        }
-    }).slice(0, 5);
+    }).slice(0, 100);
 
   }, [myRatings, allRatings, allCinemaReviews, sortType]); // 정렬 상태가 바뀌면 재계산
 
@@ -537,7 +537,7 @@ const MyTasteSection = ({ myRatings, allRatings, allCinemaReviews, onMovieClick 
     <section className="animate-fadeIn">
       {/* 🔥 정렬 버튼이 추가된 상단 헤더 영역 */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
-        <h2 className="text-3xl font-extrabold text-white text-center md:text-left">🤝 나와 <span className="text-red-500">취향이 맞는</span> 유저 Top 5</h2>
+        <h2 className="text-3xl font-extrabold text-white text-center md:text-left">🤝 나와 <span className="text-red-500">취향이 맞는</span> 유저 Top 100</h2>
         <div className="flex bg-gray-800 rounded-md p-1 border border-gray-700 shadow-lg">
           <button onClick={() => setSortType('score')} className={`px-4 py-2 text-sm font-bold rounded-md transition-colors ${sortType === 'score' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}>매칭 점수순</button>
           <button onClick={() => setSortType('rate')} className={`px-4 py-2 text-sm font-bold rounded-md transition-colors ${sortType === 'rate' ? 'bg-red-600 text-white' : 'text-gray-400 hover:text-white'}`}>일치율순</button>
