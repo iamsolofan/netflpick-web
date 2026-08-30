@@ -1924,7 +1924,7 @@ const countMovieStats = (data) => {
         <nav className="flex gap-4 md:gap-6 text-sm font-medium whitespace-nowrap w-max">
             <button onClick={() => navigate('/')} className={`transition-colors ${location.pathname === '/' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>추천 영화</button>
             <button onClick={() => navigate('/latest-reviews')} className={`transition-colors ${location.pathname === '/latest-reviews' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>최신 리뷰</button>
-            <button onClick={() => navigate('/my-taste')} className={`transition-colors ${location.pathname === '/my-taste' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>나의 취향</button>
+            <button onClick={() => navigate('/my-taste')} className={`transition-colors ${location.pathname === '/my-taste' ? 'text-white font-bold border-b-2 border-white pb-1' : 'text-gray-400 hover:text-gray-200'}`}>취향 매칭</button>
             <button onClick={() => navigate('/cinema-hell')} className={`transition-colors ${location.pathname === '/cinema-hell' ? 'text-red-400 font-bold border-b-2 border-red-400 pb-1' : 'text-gray-400 hover:text-red-300'}`}>매불쇼 시네마지옥</button>
             
             {/* 🔥 나의 평점을 시네마지옥 바로 다음으로 이동 */}
